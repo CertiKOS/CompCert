@@ -665,6 +665,187 @@ Section SYS_C_ASM.
     - destruct bytes. congruence. cbn in g. lia.
   Qed.
 
+  Program Definition mem_write_empty (m: Mem.mem) b :=
+    (Mem.mkmem (PMap.set b (m.(Mem.mem_contents)!!b) m.(Mem.mem_contents))
+       m.(Mem.mem_access) m.(Mem.nextblock) m.(Mem.alloc_flag) _ _ _).
+  Next Obligation. apply Mem.access_max. Qed.
+  Next Obligation. eauto using Mem.nextblock_noaccess. Qed.
+  Next Obligation.
+    destruct (peq b b0).
+    - subst. rewrite PMap.gss. apply Mem.contents_default.
+    - rewrite PMap.gso; eauto. apply Mem.contents_default.
+  Qed.
+
+  Definition cklr_mem_write_empty_match (c: cklr) :=
+    forall w m1 m2 b1 b2, match_mem c w m1 m2 ->
+    exists w', w ~> w' /\ match_mem c w' (mem_write_empty m1 b1) (mem_write_empty m2 b2).
+
+  Lemma storebytes_empty m b ofs:
+    Mem.storebytes m b ofs nil = Some (mem_write_empty m b).
+  Proof.
+    unfold Mem.storebytes; cbn. destruct Mem.range_perm_dec.
+    - f_equal. destruct m. cbn. apply Mem.mkmem_ext; eauto.
+    - exfalso. apply n. intros p Hp. lia.
+  Qed.
+
+  Lemma cklr_storebytes_empty (c: cklr) (w: world c) m1 m2 m3 b1 b2 ofs1 ofs2:
+    cklr_mem_write_empty_match c ->
+    Mem.storebytes m1 b1 (Ptrofs.unsigned ofs1) nil = Some m3 ->
+    match_mem c w m1 m2 ->
+    exists wx m4, w ~> wx
+             /\ Mem.storebytes m2 b2 (Ptrofs.unsigned ofs2) nil = Some m4
+             /\ match_mem c wx m3 m4.
+  Proof.
+    intros HC HS HM.
+    specialize (HC _ _ _ b1 b2 HM) as (w' & Hw' & Hc).
+    exists w', (mem_write_empty m2 b2). split; eauto.
+    split. apply storebytes_empty.
+    rewrite storebytes_empty in HS. inv HS. apply Hc.
+  Qed.
+
+  Lemma mem_write_empty_nextblock m b:
+    Mem.nextblock (mem_write_empty m b) = Mem.nextblock m.
+  Proof. unfold mem_write_empty. destruct m. reflexivity. Qed.
+
+  Lemma mem_write_empty_mem_inj f m1 m2 b1 b2:
+    Mem.mem_inj f m1 m2 ->
+    Mem.mem_inj f (mem_write_empty m1 b1) (mem_write_empty m2 b2).
+  Proof.
+    intros H. inv H. econstructor; cbn; eauto.
+    intros. rewrite !PMap.gsident. eauto.
+  Qed.
+
+  Lemma mem_write_empty_inject f m1 m2 b1 b2:
+    Mem.inject f m1 m2 ->
+    Mem.inject f (mem_write_empty m1 b1) (mem_write_empty m2 b2).
+  Proof.
+    intros H. inv H.
+    econstructor; cbn; eauto using mem_write_empty_mem_inj.
+  Qed.
+
+  Lemma inj_mem_write_empty_match: cklr_mem_write_empty_match inj.
+  Proof.
+    unfold cklr_mem_write_empty_match.
+    intros. inv H.
+    eexists. split. reflexivity.
+    rewrite <- (mem_write_empty_nextblock m1 b1).
+    rewrite <- (mem_write_empty_nextblock m2 b2).
+    econstructor. apply mem_write_empty_inject. eauto.
+  Qed.
+
+  Lemma injp_mem_write_empty_match: cklr_mem_write_empty_match injp.
+  Proof.
+    unfold cklr_mem_write_empty_match.
+    intros. inv H.
+    exploit mem_write_empty_inject; eauto. intros HX.
+    eexists (injpw f (mem_write_empty m1 b1) (mem_write_empty m2 b2) HX).
+    split.
+    - constructor; eauto; try (red; easy).
+      + split; cbn; try easy. intros. rewrite PMap.gsident. easy.
+      + split; cbn; try easy. intros. rewrite PMap.gsident. easy.
+      + red. intros. congruence.
+    - constructor.
+  Qed.
+
+  Lemma ext_mem_write_empty_match: cklr_mem_write_empty_match ext.
+  Proof.
+    unfold cklr_mem_write_empty_match.
+    intros. inv H. exists w. split. reflexivity.
+    constructor; eauto using mem_write_empty_mem_inj.
+  Qed.
+
+  Lemma mem_write_empty_extends m1 m2 b1 b2:
+    Mem.extends m1 m2 ->
+    Mem.extends (mem_write_empty m1 b1) (mem_write_empty m2 b2).
+  Proof.
+    intros H. inv H.
+    constructor; cbn; eauto using mem_write_empty_mem_inj.
+  Qed.
+
+  Lemma mem_write_empty_load ch m b b0 ofs:
+    Mem.load ch (mem_write_empty m b) b0 ofs = Mem.load ch m b0 ofs.
+  Proof.
+    Local Transparent Mem.load.
+    unfold Mem.load. cbn. rewrite PMap.gsident. reflexivity.
+  Qed.
+
+  Lemma mem_write_empty_loadbytes m b b0 ofs len:
+    Mem.loadbytes (mem_write_empty m b) b0 ofs len = Mem.loadbytes m b0 ofs len.
+  Proof.
+    unfold Mem.loadbytes. cbn. rewrite PMap.gsident. reflexivity.
+  Qed.
+
+  Lemma mem_write_empty_romatch_all se bc m b:
+    romatch_all se bc m ->
+    romatch_all se bc (mem_write_empty m b).
+  Proof.
+    intros H. red. intros. specialize (H cu H0).
+    red. intros. specialize (H _ _ _ H1 H2). eprod_crush.
+    repeat apply conj; eauto.
+    - intros. eapply H3. erewrite <- mem_write_empty_load; eauto.
+    - intros. eapply H3. erewrite <- mem_write_empty_loadbytes; eauto.
+    - intros. eapply H3. erewrite <- mem_write_empty_load; eauto.
+  Qed.
+
+  Lemma mem_write_empty_smatch bc m b b0 am:
+    smatch bc m b0 am ->
+    smatch bc (mem_write_empty m b) b0 am.
+  Proof.
+    intros H. inv H. constructor.
+    - intros. eapply H0. erewrite <- mem_write_empty_load; eauto.
+    - intros. eapply H1. erewrite <- mem_write_empty_loadbytes; eauto.
+  Qed.
+
+  Lemma mem_write_empty_bmatch bc m b b0 am:
+    bmatch bc m b0 am ->
+    bmatch bc (mem_write_empty m b) b0 am.
+  Proof.
+    intros H. inv H. constructor.
+    - apply mem_write_empty_smatch. eauto.
+    - intros. apply H1. erewrite <- mem_write_empty_load; eauto.
+  Qed.
+
+  Lemma mem_write_empty_mmatch bc m b am:
+    mmatch bc m am ->
+    mmatch bc (mem_write_empty m b) am.
+  Proof.
+    intros H. inv H.
+    constructor; eauto; intros;
+      eauto using mem_write_empty_bmatch, mem_write_empty_smatch.
+  Qed.
+
+  Lemma vaext_mem_write_empty_match: cklr_mem_write_empty_match vaext.
+  Proof.
+    unfold cklr_mem_write_empty_match.
+    intros. inv H.
+    assert (HX: vaext_wf se bc (mem_write_empty m1 b1)).
+    { inv H1. constructor;
+        eauto using mem_write_empty_romatch_all,
+        mem_write_empty_mmatch. }
+    exists (vaextw se bc (mem_write_empty m1 b1) HX). split.
+    - constructor; cbn; eauto. reflexivity.
+      intros. unfold Mem.loadbytes in H4 |- *.
+      rewrite <- H4. cbn. rewrite PMap.gsident. reflexivity.
+    - constructor. eauto using mem_write_empty_extends.
+  Qed.
+
+  Lemma vainj_mem_write_empty_match: cklr_mem_write_empty_match vainj.
+  Proof.
+    unfold cklr_mem_write_empty_match.
+    intros. inv H. exists (se, w0). split. reflexivity.
+    constructor; eauto.
+    - apply mem_write_empty_romatch_all; eauto.
+    - inv H2. rewrite <- (mem_write_empty_nextblock m1 b1).
+      rewrite <- (mem_write_empty_nextblock m2 b2).
+      econstructor. apply mem_write_empty_inject. eauto.
+  Qed.
+
+  Hint Resolve injp_mem_write_empty_match
+               inj_mem_write_empty_match
+               ext_mem_write_empty_match
+               vainj_mem_write_empty_match
+               vaext_mem_write_empty_match.
+
   Lemma cklr_storebytes w m1 m2 m3 b1 ofs1 b2 ofs2 bytes:
     mm_cklr w m1 m2 ->
     mp_cklr w b1 ofs1 b2 ofs2 ->
@@ -674,27 +855,18 @@ Section SYS_C_ASM.
              /\ mm_cklr wx m3 m4.
   Proof.
     intros Hm Hp Hs. inv Hm; inv Hp.
-    - destruct bytes.
-      2: { edestruct cklr_storebytes' as (wx & m4 & Hw & Hs' & Hm); eauto. easy.
-           eexists _, _; split; constructor; eauto. constructor; eauto. }
-      admit.
-    - destruct bytes.
-      2: { edestruct cklr_storebytes' as (wx & m4 & Hw & Hs' & Hm); eauto. easy.
-           eexists _, _; split; constructor; eauto. constructor; eauto. }
-      admit.
-    - destruct bytes.
-      2: { edestruct cklr_storebytes' as (wx & m4 & Hw & Hs' & Hm); eauto. easy.
-           eexists _, _; split; constructor; eauto. constructor; eauto. }
-      admit.
-    - destruct bytes.
-      2: { edestruct cklr_storebytes' as (wx & m4 & Hw & Hs' & Hm); eauto. easy.
-           eexists _, _; split; constructor; eauto. constructor; eauto. }
-      admit.
-    - destruct bytes.
-      2: { edestruct cklr_storebytes' as (wx & m4 & Hw & Hs' & Hm); eauto. easy.
-           eexists _, _; split; constructor; eauto. constructor; eauto. }
-      admit.
-  Admitted.
+    Ltac solve_cklr_storebytes' :=
+      edestruct cklr_storebytes' as (? & ? & ? & ? & ?); eauto;
+      [ easy |  eexists _, _; split; repeat (constructor; eauto) ].
+    Ltac solve_cklr_storebytes_empty :=
+      edestruct cklr_storebytes_empty as (? & ? & ? & ? & ?); [ | eauto | eauto | ]; eauto;
+        eexists _, _; split; repeat (constructor; eauto).
+    - destruct bytes; [ solve_cklr_storebytes_empty | solve_cklr_storebytes'].
+    - destruct bytes; [ solve_cklr_storebytes_empty | solve_cklr_storebytes'].
+    - destruct bytes; [ solve_cklr_storebytes_empty | solve_cklr_storebytes'].
+    - destruct bytes; [ solve_cklr_storebytes_empty | solve_cklr_storebytes'].
+    - destruct bytes; [ solve_cklr_storebytes_empty | solve_cklr_storebytes'].
+  Qed.
 
   Import Datatypes.
 
@@ -821,17 +993,6 @@ Section SYS_C_ASM.
 
   Hypothesis (Hwin64: Archi.win64 = false).
 
-  (* Lemma free_empty: forall m b x m', *)
-  (*     Mem.free m b x x = Some m' -> m = m'. *)
-  (* Proof. *)
-  (*   intros. apply Mem.free_result in H. subst. *)
-  (*   unfold Mem.unchecked_free. destruct m. cbn. *)
-  (*   eapply Mem.mkmem_ext; eauto. *)
-  (*   destruct mem_access. unfold PMap.set. cbn. f_equal. *)
-  (*   induction t. *)
-  (*   (* PTree.extensionality_empty *) *)
-  (* Admitted. *)
-
   Inductive mm_ca: ccworld (cc_cklrs^{*}) -> world vainj -> mem -> mem -> mem -> Prop :=
   | mm_ca_intro wn wi wj m1 m2 m3 se mbefore
     (HN: mm_cklrs wn m1 m2) (HI: match_mem inj wj m2 m3) (HJ: wi ~> wj)
@@ -850,6 +1011,26 @@ Section SYS_C_ASM.
     mp_cklr w1 b1 ofs1 b2 ofs2 -> acc_cklr w1 w2 -> mp_cklr w2 b1 ofs1 b2 ofs2.
   Proof. intros HP HW. inv HP; inv HW; constructor; rauto. Qed.
 
+  Lemma cklrs_loadbytes w m b ofs m' b' ofs' len bytes:
+    mm_cklrs w m m' ->
+    mp_cklrs w b ofs b' ofs' ->
+    Mem.loadbytes m b (Ptrofs.unsigned ofs) len = Some (map Byte bytes) ->
+    Mem.loadbytes m' b' (Ptrofs.unsigned ofs') len = Some (map Byte bytes).
+  Proof.
+    destruct w. revert m b ofs m' b' ofs' len bytes. induction x.
+    - intros. inv H. subst_dep. inv H0. eauto.
+    - intros * HM HP HL.
+      simple inversion HM. inv H.
+      exploit eq_sigT_fst. apply H1. intros HNat. inv HNat.
+      subst_dep. intros (Hw & Hm) Hms.
+      simple inversion HP. inv H.
+      exploit eq_sigT_fst. apply H1. intros HNat. inv HNat.
+      subst_dep. inv H1. intros Hp Hps.
+      erewrite IHx. reflexivity. apply Hms. apply Hps. eauto.
+      eapply cklr_loadbytes. 1, 3: eauto.
+      inv Hp; inv Hw; constructor; rstep.
+  Qed.
+
   Lemma cklrs_storebytes w m1 m2 b1 ofs1 b2 ofs2 bytes m3:
     mm_cklrs w m1 m2 ->
     mp_cklrs w b1 ofs1 b2 ofs2 ->
@@ -859,8 +1040,7 @@ Section SYS_C_ASM.
       /\ mm_cklrs w m3 m4.
   Proof.
     destruct w. revert m1 m2 b1 ofs1 b2 ofs2 m3. induction x.
-    - intros.
-      inv H. subst_dep. inv H0.
+    - intros. inv H. subst_dep. inv H0.
       exists m3. split; eauto. constructor.
     - intros * HM HP HS.
       simple inversion HM. inv H.
@@ -888,14 +1068,15 @@ Section SYS_C_ASM.
   Proof.
     intros HM HP HS. inv HM. inv HP.
     exploit cklrs_storebytes; eauto. intros (mc & Hmc & Hmmc).
-    assert (Hp: ptr_inject (mi inj wj) (b3, Ptrofs.unsigned ofs3) (b2, Ptrofs.unsigned ofs2)).
-    { eapply ptrbits_ptr_inject; eauto.
-      - eapply ptrbits_inject_incr. 2: eauto. rauto.
-      - eapply Mem.storebytes_range_perm; eauto. admit. }
-    exploit (CKLR.cklr_storebytes inj); eauto. left. apply Hp. apply bytes_inject.
-    unfold k1, uncurry. rewrite Hmc.
-    intros Ht. inv Ht. destruct H3 as (wt & Hwt & Hmt).
-    exists y. split; eauto. econstructor; eauto.
+    assert (exists wt mt,  wj ~> wt
+             /\ Mem.storebytes m2 b2 (Ptrofs.unsigned ofs2) (map Byte bytes) = Some mt
+             /\ match_mem inj wt mc mt)
+      as (wt & mt & Hwt & Hmt & Hmm).
+    { destruct bytes.
+      - eapply (cklr_storebytes_empty inj) in Hmc; eauto.
+      - eapply cklr_storebytes' in Hmc; eauto.
+        apply Hmc. congruence. rstep. }
+    exists mt. split; eauto. econstructor; eauto.
     - etransitivity; eauto.
     - intros b Hb. eapply romatch_storebytes; eauto.
     - erewrite Mem.nextblock_storebytes; eauto.
@@ -905,7 +1086,7 @@ Section SYS_C_ASM.
         reflexivity.
       + rewrite unchanged_on_alloc_flag. symmetry.
         eapply Mem.storebytes_alloc_flag; eauto.
-  Admitted.
+  Qed.
 
   Lemma ca_loadbytes n w m1 b1 ofs1 m2 b2 ofs2 bytes se mbefore len:
     mm_ca n (se, w) mbefore m1 m2 ->
@@ -913,7 +1094,10 @@ Section SYS_C_ASM.
     Mem.loadbytes m1 b1 (Ptrofs.unsigned ofs1) len = Some (map Byte bytes) ->
     Mem.loadbytes m2 b2 (Ptrofs.unsigned ofs2) len = Some (map Byte bytes).
   Proof.
-  Admitted.
+    intros HM HP HL. inv HM. inv HP.
+    exploit cklrs_loadbytes; eauto. intros Hl.
+    eapply cklr_loadbytes'; eauto. rstep.
+  Qed.
 
   Inductive match_sys_state:
     ccworld (cc_cklrs^{*}) -> world vainj -> cc_ca_world -> signature -> sys_state -> sys_state -> Prop :=
@@ -999,7 +1183,9 @@ Section SYS_C_ASM.
           eexists _, _. split; eauto. }
         eexists (sys_read_query n b' ofs' m). split.
         * econstructor; eauto.
-          -- admit.
+          -- cbn in H0. eprod_crush. subst. inv H2.
+             cbn in H.
+            admit.
           -- specialize (Hreg RDI). rewrite <- H4 in Hreg. inv Hreg; eauto.
           -- specialize (Hreg RDX). rewrite <- H8 in Hreg. inv Hreg; eauto.
         * econstructor; try reflexivity.
@@ -1123,6 +1309,13 @@ Section SYS_C_ASM.
     - easy.
     - easy.
   Admitted.
+
+(*   H0 : match_senv (cc_cklrs ^ x2) c0 se1 s0 *)
+(*   H12 : inj_stbls i s0 se2 *)
+(* match_prog p tp *)
+
+(* H3 : Genv.find_funct (Clight.globalenv se1 p) vf = Some read *)
+(* Genv.find_funct (Genv.globalenv se2 tp) (r0 PC) = Some read_asm *)
 
 End SYS_C_ASM.
 
