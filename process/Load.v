@@ -479,8 +479,6 @@ Section INIT_C_ASM.
     destruct H1. destruct X. apply fsim_skel.
   Qed.
 
-  Hypothesis (Hwin64: Archi.win64 = false).
-
   Lemma init_c_asm p tp:
     match_prog p tp -> forward_simulation cc_compcert 1 (init_c p) (init_asm tp).
   Proof.
@@ -532,9 +530,9 @@ Section INIT_C_ASM.
                   <- (Vptr b Ptrofs.zero)) # RA
                  <- Vnullptr, m). split.
         { econstructor; cbn; try constructor; eauto.
-          - rewrite Hwin64. reflexivity.
+          - destruct Archi.win64; cbn; try easy.
           - repeat constructor. red. unfold size_arguments.
-            cbn. rewrite Hwin64. reflexivity.
+            cbn. destruct Archi.win64; reflexivity.
           - erewrite init_mem_nextblock; eauto.
             apply Genv.invert_find_symbol in H4.
             exploit @Genv.genv_symb_range; eauto.
@@ -950,6 +948,78 @@ Section FIND_FUNCT.
   Qed.
 
 End FIND_FUNCT.
+
+Obligation Tactic := idtac.
+
+Program Definition cc_wp_id {li}: callconv li li :=
+  {|
+    ccworld := unit;
+    match_senv w se1 se2 :=
+      exists w, match_senv cc_compcert w se1 se2;
+    match_query w q1 q2 := entry q1 = Vundef /\ entry q2 = Vundef /\ q1 = q2;
+    match_reply w := eq;
+  |}.
+Next Obligation.
+  intros. cbn -[cc_compcert] in H. destruct H as (wcc & Hw).
+  eapply match_senv_public_preserved; eauto.
+Qed.
+Next Obligation.
+  intros. cbn -[cc_compcert] in H. destruct H as (wcc & Hw).
+  eapply match_senv_valid_for; eauto.
+Qed.
+Lemma cklr_find_symbol_none (c: CKLR.cklr) w se1 se2 i:
+  match_senv c w se1 se2 ->
+  Genv.find_symbol se1 i = None <->
+  Genv.find_symbol se2 i = None.
+Proof.
+  split; intros.
+  - apply CKLR.match_stbls_proj in H.
+    destruct (Genv.find_symbol se2 i) eqn: Hi; try easy. exfalso.
+    destruct (plt b (Genv.genv_next se2)).
+    + eapply Genv.mge_img in p; eauto.
+      destruct p as (b1 & Hb1).
+      eapply Genv.mge_symb in Hb1; eauto.
+      unfold Genv.find_symbol in Hi.
+      rewrite <- Hb1 in Hi. unfold Genv.find_symbol in H0. congruence.
+    + apply n. eapply Genv.genv_symb_range; eauto.
+  - apply CKLR.match_stbls_proj in H.
+    destruct (Genv.find_symbol se1 i) eqn: Hi; try easy. exfalso.
+    destruct (plt b (Genv.genv_next se1)).
+    + eapply Genv.mge_dom in p; eauto.
+      destruct p as (b1 & Hb1).
+      eapply Genv.mge_symb in Hb1; eauto.
+      unfold Genv.find_symbol in Hi.
+      rewrite Hb1 in Hi. unfold Genv.find_symbol in H0. congruence.
+    + apply n. eapply Genv.genv_symb_range; eauto.
+Qed.
+
+Next Obligation.
+  intros. cbn in *. eprod_crush.
+  destruct s6. subst. inv H2. rewrite !H0.
+  assert (HX: Genv.find_symbol se1 i = None <-> Genv.find_symbol se2 i = None).
+  { assert (Genv.find_symbol se1 i = None <-> Genv.find_symbol s0 i = None).
+    { clear - H. revert se1 s0 H. induction x.
+      - intros; cbn in H. subst; eauto. reflexivity.
+      - intros. cbn in *. eprod_crush. etransitivity.
+        2: eapply IHx; eauto.
+        repeat destruct s1; cbn in H.
+        + eapply (cklr_find_symbol_none InjectFootprint.injp); eauto.
+        + eapply (cklr_find_symbol_none Inject.inj); eauto.
+        + eapply (cklr_find_symbol_none Extends.ext); eauto.
+        + destruct p.
+          eapply (cklr_find_symbol_none VAInject.vainj); eauto.
+          instantiate (1 := (_, _)). split; apply H.
+        + eapply (cklr_find_symbol_none VAExtends.vaext); eauto. }
+    etransitivity. eauto.
+    eapply (cklr_find_symbol_none Inject.inj); eauto. }
+  unfold Genv.symbol_address.
+  destruct (Genv.find_symbol se1 i) eqn: HA;
+    destruct (Genv.find_symbol se2 i) eqn: HB; try easy.
+  exfalso. assert (Some b = None). apply HX. easy. easy.
+  exfalso. assert (Some b = None). apply HX. easy. easy.
+  Unshelve. cbn. exact tt.
+Qed.
+Next Obligation. intros. cbn in *. easy. Qed.
 
 Section SYS_C_ASM.
 
@@ -1456,8 +1526,11 @@ Section SYS_C_ASM.
 
   Import ListNotations.
 
+  Lemma rw_sig_size_arguments: size_arguments rw_sig = 0.
+  Proof. cbn. destruct Archi.win64; cbn; lia. Qed.
+
   Lemma sys_c_asm p tp:
-    match_prog p tp -> forward_simulation 1 cc_compcert (sys_c p) (sys_asm tp).
+    match_prog p tp -> forward_simulation cc_wp_id cc_compcert (sys_c p) (sys_asm tp).
   Proof.
     intros H. assert (Hsk: erase_program p = erase_program tp).
     eapply match_prog_skel; eauto.
@@ -1483,8 +1556,7 @@ Section SYS_C_ASM.
         inv H5. inv HRM. inv H2.
         2: { match goal with
           | [ H: size_arguments _ > 0 |- _ ] =>
-          unfold rw_sig in H; cbn in H; rewrite Hwin64 in H; cbn in H; lia
-          end. }
+          rewrite rw_sig_size_arguments in H; lia  end. }
         (* cc_asm vainj *)
         destruct q2. destruct H6 as (Hreg & Hpc & Him).
         (* arguments *)
@@ -1517,8 +1589,7 @@ Section SYS_C_ASM.
         inv H5. inv HRM. inv H2.
         2: { match goal with
           | [ H: size_arguments _ > 0 |- _ ] =>
-          unfold rw_sig in H; cbn in H; rewrite Hwin64 in H; cbn in H; lia
-          end. }
+          rewrite rw_sig_size_arguments in H; lia  end. }
         (* cc_asm vainj *)
         destruct q2. destruct H6 as (Hreg & Hpc & Him).
         (* arguments *)
@@ -1561,13 +1632,13 @@ Section SYS_C_ASM.
             subst caw_sg0. constructor; eauto.
             - intros r. destruct r; cbn; eauto. easy.
             - apply Mem.unchanged_on_refl.
-            - cbn. rewrite Hwin64. cbn.
+            - rewrite rw_sig_size_arguments.
               replace (loc_init_args 0 (caw_rs0 RSP))
                 with (fun (_: block) (_: Z) => False); eauto.
               repeat (apply Axioms.functional_extensionality; intros).
               apply PropExtensionality.propositional_extensionality.
               split; try easy. intros HX. inv HX. lia.
-            - cbn. rewrite Hwin64. cbn.
+            - rewrite rw_sig_size_arguments.
               intros * HX. inv HX. lia. }
           { exists (s, wj). split. split; eauto. split.
             - intros. cbn in HRS. apply (mi_acc inj) in HJ.
@@ -1592,13 +1663,13 @@ Section SYS_C_ASM.
             subst caw_sg0. constructor; eauto.
             - intros r. destruct r; cbn; eauto. easy.
             - apply Mem.unchanged_on_refl.
-            - cbn. rewrite Hwin64. cbn.
+            - rewrite rw_sig_size_arguments.
               replace (loc_init_args 0 (caw_rs0 RSP))
                 with (fun (_: block) (_: Z) => False); eauto.
               repeat (apply Axioms.functional_extensionality; intros).
               apply PropExtensionality.propositional_extensionality.
               split; try easy. intros HX. inv HX. lia.
-            - cbn. rewrite Hwin64. cbn.
+            - rewrite rw_sig_size_arguments.
               intros * HX. inv HX. lia. }
           { exists (s, wj). split. split; eauto. split.
             - intros. cbn in HRS. apply (mi_acc inj) in HJ.
@@ -1608,28 +1679,66 @@ Section SYS_C_ASM.
             - constructor; eauto. }
     - intros * HS HE. inv HE; inv HS.
       + exists tt, (inl (read_query n)). repeat apply conj; try constructor; eauto.
-        * admit.
+        * econstructor. eauto.
         * intros * HR HA. inv HR. inv HA.
           exists (sys_read_reply bytes b2 ofs2 m2). split; try econstructor; eauto.
           subst ms. cbn in wB. eprod_crush. destruct c.
           cbn in *. inv H4. econstructor; eauto.
       + exists tt, (inr (write_query bytes)). repeat apply conj; try constructor; eauto.
-        * admit.
+        * econstructor. eauto.
         * intros * HR HA. inv HR. inv HA.
           exists (sys_write_reply n m2). split; try econstructor; eauto.
           subst ms. cbn in wB. eprod_crush. destruct c.
           cbn in *. inv H4. econstructor; eauto.
     - easy.
     - easy.
-  Admitted.
+  Qed.
 
 End SYS_C_ASM.
 
-Require Import CategoricalComp.
+Section REFINE.
 
-Close Scope Z_scope.
+  Hypothesis (Hwin64: Archi.win64 = false).
+  Import CategoricalComp.
+  Close Scope Z_scope.
 
-Definition load_c (prog: Clight.program) : Smallstep.semantics (li_sys + li_sys) li_wp :=
-  let sk := AST.erase_program prog in
-  comp_semantics' (init_c prog)
-    (comp_semantics' (semantics1 prog) (sys_c prog) sk) sk.
+  Definition load_c (prog: Clight.program) : Smallstep.semantics (li_sys + li_sys) li_wp :=
+    let sk := AST.erase_program prog in
+    comp_semantics' (init_c prog)
+      (comp_semantics' (semantics1 prog) (sys_c prog) sk) sk.
+
+  Definition load_asm (prog: Asm.program) : Smallstep.semantics (li_sys + li_sys) li_wp :=
+    let sk := AST.erase_program prog in
+    comp_semantics' (init_asm prog)
+      (comp_semantics' (Asm.semantics prog) (sys_asm prog) sk) sk.
+
+  Lemma cc_compcert_eqv:
+    cceqv cc_compcert Compiler.cc_compcert.
+  Proof.
+    unfold cc_compcert, Compiler.cc_compcert.
+    apply cc_compose_eqv. reflexivity.
+    apply cc_compose_eqv. reflexivity.
+    apply cc_compose_eqv. reflexivity.
+    rewrite ca_cllmma_equiv.
+    do 2 rewrite cc_compose_assoc. reflexivity.
+  Qed.
+
+  Lemma load_c_asm (p: Clight.program) tp:
+    transf_clight_program p = Errors.OK tp ->
+    forward_simulation cc_wp_id 1 (load_c p) (load_asm tp).
+  Proof.
+    intros H. apply transf_clight_program_match in H.
+    exploit sys_c_asm; eauto. intros Hsys.
+    exploit init_c_asm; eauto. intros Hinit.
+    unfold load_c, load_asm.
+    exploit match_prog_skel. apply H. intros Hsk. rewrite <- Hsk.
+    eapply categorical_compose_simulation'; eauto.
+    2,3: apply Linking.linkorder_refl.
+    eapply categorical_compose_simulation'; eauto.
+    2,3: apply Linking.linkorder_refl.
+    exploit clight_semantic_preservation. apply H. intros [Hx _].
+    eapply open_fsim_ccref; eauto.
+    1,2: apply cc_compcert_eqv.
+  Qed.
+
+End REFINE.
