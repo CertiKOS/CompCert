@@ -808,52 +808,87 @@ Section FIND_FUNCT.
     - eapply IHl3; eauto.
   Defined.
 
-  Hypothesis (Hopt1: Compopts.optim_tailcalls tt = false).
-  Hypothesis (Hopt2: Compopts.optim_constprop tt = false).
-  Hypothesis (Hopt3: Compopts.optim_CSE tt = false).
-  Hypothesis (Hopt4: Compopts.optim_redundancy tt = false).
-  Hypothesis (Hopt5: Compopts.debug tt = false).
+  Lemma match_program_gen_compose_match_if
+    {C1 F1 F2 V1 V2}
+    {c1: C1} {mf1 mf2 mv1 mv2}
+    {p1: AST.program F1 V1} {p2: AST.program F2 V2} {p3: AST.program F2 V2}
+    {LC1: Linker C1} {LF2: Linker F2} {LV2: Linker V2} {P: unit -> bool}:
+    Linking.match_program_gen mf1 mv1 c1 p1 p2 ->
+    (if (P tt) then Linking.match_program mf2 mv2 p2 p3 else p2 = p3) ->
+    Linking.match_program_gen
+      (compose_match_fundef mf1 (if P tt then mf2 else fun _ => eq))
+      (rel_compose mv1 (if P tt then mv2 else eq)) (c1, p2) p1 p3.
+  Proof.
+    intros A B. unfold match_if in B.
+    destruct (P tt).
+    - unfold match_program in B.
+      eapply match_program_gen_compose; eauto.
+    - subst. destruct A as (A1 & A2 & A3).
+      repeat apply conj; try congruence.
+      clear - A1. revert A1.
+      generalize (prog_defs p1) as l1.
+      generalize (prog_defs p3) as l3.
+      induction l3; intros * H1; inv H1. constructor.
+      constructor.
+      + destruct a1 as [ ? [|] ]; destruct a as [ ? [|] ]; inv H3; inv H0.
+        * constructor; eauto. cbn.
+          econstructor; eauto. split; eauto. apply linkorder_refl.
+          econstructor; eauto.
+        * constructor; eauto. cbn.
+          constructor. inv H3. constructor.
+          eexists; split; eauto.
+      + eapply IHl3; eauto.
+  Defined.
+
+  Lemma if_commute {A B} (P: bool) (r1 r2: A -> B -> Prop) (a: A) (b: B):
+    (if P then r1 else r2) a b = (if P then r1 a b else r2 a b).
+  Proof. destruct P; reflexivity. Qed.
 
   Lemma compcert_match_program_gen p tp:
     match_prog p tp ->
     exists (C: Type) (LC: Linker C) (c: C) mf mv,
       match_program_gen mf mv c p tp /\
-      forall x t, mf x read t -> t = read_asm.
+      forall x t def params ret cc, mf x (Ctypes.External def params ret cc) t ->
+                               t = AST.External def.
   Proof.
     intros H. cbn in *. eprod_crush. subst.
+    repeat match goal with
+    | [ H: match_if _ ?m _ _ |- _] => unfold match_if, m in H; rewrite if_commute in H
+    end.
     destruct H as (A & A1). red in A.
     pose proof (match_program_gen_compose A H0) as B. clear A H0.
     pose proof (match_program_gen_compose B H1) as C. clear B H1.
     pose proof (match_program_gen_compose C H2) as D. clear C H2.
     pose proof (match_program_gen_compose D H3) as E. clear D H3.
-    red in H4. rewrite Hopt1 in H4. subst.
-    pose proof (match_program_gen_compose E H5) as F. clear E H5.
-    pose proof (match_program_gen_compose F H6) as G. clear F H6.
-    red in H7. rewrite Hopt2 in H7. subst.
-    red in H8. rewrite Hopt2 in H8. subst.
-    red in H9. rewrite Hopt3 in H9. subst.
-    red in H10. rewrite Hopt4 in H10. subst.
-    pose proof (match_program_gen_compose G H11) as H. clear G H11.
-    pose proof (match_program_gen_compose H H12) as I. clear H H12.
-    pose proof (match_program_gen_compose I H13) as J. clear I H13.
-    pose proof (match_program_gen_compose J H14) as K. clear J H14.
-    red in H15. rewrite Hopt5 in H15. subst.
-    pose proof (match_program_gen_compose K H16) as L. clear K H16.
-    pose proof (match_program_gen_compose L H17) as M. clear L H17.
+    pose proof (match_program_gen_compose_match_if E H4) as F. clear E H4.
+    pose proof (match_program_gen_compose F H5) as G. clear F H5.
+    pose proof (match_program_gen_compose G H6) as H. clear G H6.
+    pose proof (match_program_gen_compose_match_if H H7) as I. clear H H7.
+    pose proof (match_program_gen_compose_match_if I H8) as J. clear I H8.
+    pose proof (match_program_gen_compose_match_if J H9) as K. clear J H9.
+    pose proof (match_program_gen_compose_match_if K H10) as L. clear K H10.
+    pose proof (match_program_gen_compose L H11) as M. clear L H11.
+    pose proof (match_program_gen_compose M H12) as N. clear M H12.
+    pose proof (match_program_gen_compose N H13) as O. clear N H13.
+    pose proof (match_program_gen_compose O H14) as P. clear O H14.
+    pose proof (match_program_gen_compose_match_if P H15) as Q. clear P H15.
+    pose proof (match_program_gen_compose Q H16) as R. clear Q H16.
+    pose proof (match_program_gen_compose R H17) as S. clear R H17.
 
     match goal with
     | [ H: @match_program_gen ?C ?F1 ?V1 ?F2 ?V2 ?LC ?mf ?mv ?c ?p1 ?p2 |- _ ] =>
         exists C, LC, c, mf, mv
     end.
     split; eauto.
-    intros c t Hx.
-    (* repeat match goal with *)
-    (*        | [ H: linkorder _ (_, _) |- _ ] => inv H *)
-    (*        end. *)
+    intros c t * Hx.
     repeat match goal with
            | [ H: compose_match_fundef _ _ _ _ _ |- _ ] => inv H
            end.
+    clear S.
     repeat match goal with
+    | [ H: (if ?x then _ else _) _ _ _ |- _ ] => destruct x; subst
+    end.
+    all: repeat match goal with
     | [H: SimplLocals.transf_fundef _ = Errors.OK _ |- _] => inv H
     | [H: Cshmgenproof.match_fundef _ _ _ |- _ ] => inv H
     | [H: Cminorgen.transl_fundef _ = Errors.OK _ |- _] => inv H
@@ -862,13 +897,16 @@ Section FIND_FUNCT.
         destruct H as (? & ? & H1); inv H1
     | [H: RTLgen.transl_fundef _ = Errors.OK _ |- _] => inv H
     | [H: Inlining.transf_fundef _ _ = Errors.OK _ |- _] => inv H
+    | [H: CSE.transf_fundef _ _ = Errors.OK _ |- _] => inv H
+    | [H: Deadcode.transf_fundef _ _ = Errors.OK _ |- _] => inv H
     | [H: Allocation.transf_fundef _ = Errors.OK _ |- _] => inv H
-    | [H: Renumber.transf_fundef _ = Errors.OK _ |- _] => inv H
     | [H: Linearize.transf_fundef _ = Errors.OK _ |- _] => inv H
+    | [H: Debugvar.transf_fundef _ = Errors.OK _ |- _] => inv H
+    | [H: Renumber.transf_fundef _ = Errors.OK _ |- _] => inv H
     | [H: Stacking.transf_fundef _ = Errors.OK _ |- _] => inv H
     | [H: Asmgen.transf_fundef _ = Errors.OK _ |- _] => inv H
            end.
-    reflexivity.
+    all: reflexivity.
   Qed.
 
   Lemma match_prog_read p tp f se tse vf tvf:
@@ -877,6 +915,20 @@ Section FIND_FUNCT.
     Val.inject f vf tvf ->
     Genv.find_funct (Clight.globalenv se p) vf = Some read ->
     Genv.find_funct (Genv.globalenv tse tp) tvf = Some read_asm.
+  Proof.
+    intros HP HS HI HF.
+    eapply compcert_match_program_gen in HP
+        as (C & LC & c & mf & mv & H & HX); eauto.
+    eapply Genv.find_funct_match in H as (c0 & tfd & HW & HY & HZ); eauto.
+    rewrite HW. f_equal. eapply HX; eauto.
+  Qed.
+
+  Lemma match_prog_write p tp f se tse vf tvf:
+    match_prog p tp ->
+    Genv.match_stbls f se tse ->
+    Val.inject f vf tvf ->
+    Genv.find_funct (Clight.globalenv se p) vf = Some write ->
+    Genv.find_funct (Genv.globalenv tse tp) tvf = Some write_asm.
   Proof.
     intros HP HS HI HF.
     eapply compcert_match_program_gen in HP
@@ -1244,13 +1296,7 @@ Section SYS_C_ASM.
       eapply cklr_find_funct; eauto.
   Qed.
 
-  Hypothesis (Hopt1: Compopts.optim_tailcalls tt = false).
-  Hypothesis (Hopt2: Compopts.optim_constprop tt = false).
-  Hypothesis (Hopt3: Compopts.optim_CSE tt = false).
-  Hypothesis (Hopt4: Compopts.optim_redundancy tt = false).
-  Hypothesis (Hopt5: Compopts.debug tt = false).
-
-  Lemma ca_find_funct p tp i se1 se2 se3 vf1 vf2 vf3 wn:
+  Lemma ca_find_funct_read p tp i se1 se2 se3 vf1 vf2 vf3 wn:
     match_prog p tp ->
     match_senv (cc_cklrs ^ {*}) wn se1 se2 ->
     mv_cklrs wn vf1 vf2 ->
@@ -1262,6 +1308,20 @@ Section SYS_C_ASM.
     intros HMP HSE HVF HI HVF2 HF.
     eapply cklrs_find_funct in HF. 2, 3: eauto. clear HSE HVF.
     eapply match_prog_read; eauto. apply HI. apply HF.
+  Qed.
+
+  Lemma ca_find_funct_write p tp i se1 se2 se3 vf1 vf2 vf3 wn:
+    match_prog p tp ->
+    match_senv (cc_cklrs ^ {*}) wn se1 se2 ->
+    mv_cklrs wn vf1 vf2 ->
+    inj_stbls i se2 se3 ->
+    Val.inject i vf2 vf3 ->
+    Genv.find_funct (Clight.globalenv se1 p) vf1 = Some write ->
+    Genv.find_funct (Genv.globalenv se3 tp) vf3 = Some write_asm.
+  Proof.
+    intros HMP HSE HVF HI HVF2 HF.
+    eapply cklrs_find_funct in HF. 2, 3: eauto. clear HSE HVF.
+    eapply match_prog_write; eauto. apply HI. apply HF.
   Qed.
 
   Lemma cklrs_loadbytes w m b ofs m' b' ofs' len bytes:
@@ -1437,7 +1497,7 @@ Section SYS_C_ASM.
         eexists (sys_read_query n b' ofs' m). split.
         * econstructor; eauto.
           -- cbn in H0. eprod_crush. subst. inv H2.
-             cbn in Hreg. eapply ca_find_funct; eauto. cbn; eauto.
+             cbn in Hreg. eapply ca_find_funct_read; eauto. cbn; eauto.
           -- specialize (Hreg RDI). rewrite <- H4 in Hreg. inv Hreg; eauto.
           -- specialize (Hreg RDX). rewrite <- H8 in Hreg. inv Hreg; eauto.
         * econstructor; try reflexivity.
@@ -1470,8 +1530,8 @@ Section SYS_C_ASM.
           eexists _, _. split; eauto. }
         exists (sys_write_query bytes m). split.
         * econstructor; eauto.
-          -- cbn in H0.
-            admit.
+          -- cbn in H0. eprod_crush. subst. inv H2.
+             cbn in Hreg. eapply ca_find_funct_write; eauto. cbn; eauto.
           -- specialize (Hreg RDI). rewrite <- H4 in Hreg. inv Hreg; eauto.
           -- specialize (Hreg RDX). rewrite <- H8 in Hreg. inv Hreg; eauto.
           -- inv Him. eapply ca_loadbytes; eauto.
