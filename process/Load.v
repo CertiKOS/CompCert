@@ -144,6 +144,197 @@ Section CA.
 
 End CA.
 
+Section WRITE_EMPTY.
+
+  Import CallconvAlgebra CallConv CKLR.
+  Import Inject InjectFootprint Extends VAInject VAExtends.
+  Import ValueDomain ValueAnalysis VAInject.
+  Transparent Mem.load Mem.loadbytes Mem.storebytes.
+
+  Program Definition mem_write_empty (m: Mem.mem) b :=
+    (Mem.mkmem (PMap.set b (m.(Mem.mem_contents)!!b) m.(Mem.mem_contents))
+       m.(Mem.mem_access) m.(Mem.nextblock) m.(Mem.alloc_flag) _ _ _).
+  Next Obligation. apply Mem.access_max. Qed.
+  Next Obligation. eauto using Mem.nextblock_noaccess. Qed.
+  Next Obligation.
+    destruct (peq b b0).
+    - subst. rewrite PMap.gss. apply Mem.contents_default.
+    - rewrite PMap.gso; eauto. apply Mem.contents_default.
+  Qed.
+
+  Definition cklr_mem_write_empty_match (c: cklr) :=
+    forall w m1 m2 b1 b2, match_mem c w m1 m2 ->
+    exists w', w ~> w' /\ match_mem c w' (mem_write_empty m1 b1) (mem_write_empty m2 b2).
+
+  Lemma storebytes_empty m b ofs:
+    Mem.storebytes m b ofs nil = Some (mem_write_empty m b).
+  Proof.
+    unfold Mem.storebytes; cbn. destruct Mem.range_perm_dec.
+    - f_equal. destruct m. cbn. apply Mem.mkmem_ext; eauto.
+    - exfalso. apply n. intros p Hp. lia.
+  Qed.
+
+  Lemma cklr_storebytes_empty (c: cklr) (w: world c) m1 m2 m3 b1 b2 ofs1 ofs2:
+    cklr_mem_write_empty_match c ->
+    Mem.storebytes m1 b1 (Ptrofs.unsigned ofs1) nil = Some m3 ->
+    match_mem c w m1 m2 ->
+    exists wx m4, w ~> wx
+             /\ Mem.storebytes m2 b2 (Ptrofs.unsigned ofs2) nil = Some m4
+             /\ match_mem c wx m3 m4.
+  Proof.
+    intros HC HS HM.
+    specialize (HC _ _ _ b1 b2 HM) as (w' & Hw' & Hc).
+    exists w', (mem_write_empty m2 b2). split; eauto.
+    split. apply storebytes_empty.
+    rewrite storebytes_empty in HS. inv HS. apply Hc.
+  Qed.
+
+  Lemma mem_write_empty_nextblock m b:
+    Mem.nextblock (mem_write_empty m b) = Mem.nextblock m.
+  Proof. unfold mem_write_empty. destruct m. reflexivity. Qed.
+
+  Lemma mem_write_empty_mem_inj f m1 m2 b1 b2:
+    Mem.mem_inj f m1 m2 ->
+    Mem.mem_inj f (mem_write_empty m1 b1) (mem_write_empty m2 b2).
+  Proof.
+    intros H. inv H. econstructor; cbn; eauto.
+    intros. rewrite !PMap.gsident. eauto.
+  Qed.
+
+  Lemma mem_write_empty_inject f m1 m2 b1 b2:
+    Mem.inject f m1 m2 ->
+    Mem.inject f (mem_write_empty m1 b1) (mem_write_empty m2 b2).
+  Proof.
+    intros H. inv H.
+    econstructor; cbn; eauto using mem_write_empty_mem_inj.
+  Qed.
+
+  Lemma inj_mem_write_empty_match: cklr_mem_write_empty_match inj.
+  Proof.
+    unfold cklr_mem_write_empty_match.
+    intros. inv H.
+    eexists. split. reflexivity.
+    rewrite <- (mem_write_empty_nextblock m1 b1).
+    rewrite <- (mem_write_empty_nextblock m2 b2).
+    econstructor. apply mem_write_empty_inject. eauto.
+  Qed.
+
+  Lemma injp_mem_write_empty_match: cklr_mem_write_empty_match injp.
+  Proof.
+    unfold cklr_mem_write_empty_match.
+    intros. inv H.
+    exploit mem_write_empty_inject; eauto. intros HX.
+    eexists (injpw f (mem_write_empty m1 b1) (mem_write_empty m2 b2) HX).
+    split.
+    - constructor; eauto; try (red; easy).
+      + split; cbn; try easy. intros. rewrite PMap.gsident. easy.
+      + split; cbn; try easy. intros. rewrite PMap.gsident. easy.
+      + red. intros. congruence.
+    - constructor.
+  Qed.
+
+  Lemma ext_mem_write_empty_match: cklr_mem_write_empty_match ext.
+  Proof.
+    unfold cklr_mem_write_empty_match.
+    intros. inv H. exists w. split. reflexivity.
+    constructor; eauto using mem_write_empty_mem_inj.
+  Qed.
+
+  Lemma mem_write_empty_extends m1 m2 b1 b2:
+    Mem.extends m1 m2 ->
+    Mem.extends (mem_write_empty m1 b1) (mem_write_empty m2 b2).
+  Proof.
+    intros H. inv H.
+    constructor; cbn; eauto using mem_write_empty_mem_inj.
+  Qed.
+
+  Lemma mem_write_empty_load ch m b b0 ofs:
+    Mem.load ch (mem_write_empty m b) b0 ofs = Mem.load ch m b0 ofs.
+  Proof.
+    Local Transparent Mem.load.
+    unfold Mem.load. cbn. rewrite PMap.gsident. reflexivity.
+  Qed.
+
+  Lemma mem_write_empty_loadbytes m b b0 ofs len:
+    Mem.loadbytes (mem_write_empty m b) b0 ofs len = Mem.loadbytes m b0 ofs len.
+  Proof.
+    unfold Mem.loadbytes. cbn. rewrite PMap.gsident. reflexivity.
+  Qed.
+
+  Lemma mem_write_empty_romatch_all se bc m b:
+    romatch_all se bc m ->
+    romatch_all se bc (mem_write_empty m b).
+  Proof.
+    intros H. red. intros. specialize (H cu H0).
+    red. intros. specialize (H _ _ _ H1 H2). eprod_crush.
+    repeat apply conj; eauto.
+    - intros. eapply H3. erewrite <- mem_write_empty_load; eauto.
+    - intros. eapply H3. erewrite <- mem_write_empty_loadbytes; eauto.
+    - intros. eapply H3. erewrite <- mem_write_empty_load; eauto.
+  Qed.
+
+  Lemma mem_write_empty_smatch bc m b b0 am:
+    smatch bc m b0 am ->
+    smatch bc (mem_write_empty m b) b0 am.
+  Proof.
+    intros H. inv H. constructor.
+    - intros. eapply H0. erewrite <- mem_write_empty_load; eauto.
+    - intros. eapply H1. erewrite <- mem_write_empty_loadbytes; eauto.
+  Qed.
+
+  Lemma mem_write_empty_bmatch bc m b b0 am:
+    bmatch bc m b0 am ->
+    bmatch bc (mem_write_empty m b) b0 am.
+  Proof.
+    intros H. inv H. constructor.
+    - apply mem_write_empty_smatch. eauto.
+    - intros. apply H1. erewrite <- mem_write_empty_load; eauto.
+  Qed.
+
+  Lemma mem_write_empty_mmatch bc m b am:
+    mmatch bc m am ->
+    mmatch bc (mem_write_empty m b) am.
+  Proof.
+    intros H. inv H.
+    constructor; eauto; intros;
+      eauto using mem_write_empty_bmatch, mem_write_empty_smatch.
+  Qed.
+
+  Lemma vaext_mem_write_empty_match: cklr_mem_write_empty_match vaext.
+  Proof.
+    unfold cklr_mem_write_empty_match.
+    intros. inv H.
+    assert (HX: vaext_wf se bc (mem_write_empty m1 b1)).
+    { inv H1. constructor;
+        eauto using mem_write_empty_romatch_all,
+        mem_write_empty_mmatch. }
+    exists (vaextw se bc (mem_write_empty m1 b1) HX). split.
+    - constructor; cbn; eauto. reflexivity.
+      intros. unfold Mem.loadbytes in H4 |- *.
+      rewrite <- H4. cbn. rewrite PMap.gsident. reflexivity.
+    - constructor. eauto using mem_write_empty_extends.
+  Qed.
+
+  Lemma vainj_mem_write_empty_match: cklr_mem_write_empty_match vainj.
+  Proof.
+    unfold cklr_mem_write_empty_match.
+    intros. inv H. exists (se, w0). split. reflexivity.
+    constructor; eauto.
+    - apply mem_write_empty_romatch_all; eauto.
+    - inv H2. rewrite <- (mem_write_empty_nextblock m1 b1).
+      rewrite <- (mem_write_empty_nextblock m2 b2).
+      econstructor. apply mem_write_empty_inject. eauto.
+  Qed.
+
+End WRITE_EMPTY.
+
+Hint Resolve injp_mem_write_empty_match
+  inj_mem_write_empty_match
+  ext_mem_write_empty_match
+  vainj_mem_write_empty_match
+  vaext_mem_write_empty_match.
+
+
 Import Ctypes.                  (* shadow Tnil and Tcons from RelationClasses *)
 
 Notation tint := (Tint I32 Unsigned noattr).
@@ -238,7 +429,7 @@ End INIT_ASM.
 
 Section VA.
 
-  Require Import ValueDomain ValueAnalysis VAInject.
+  Import ValueDomain ValueAnalysis VAInject.
 
   Context (se: Genv.symtbl) sk m (Hm: init_mem se sk = Some m).
   Let bc := bc_of_symtbl se.
@@ -264,7 +455,7 @@ End VA.
 Require Import Compiler.
 
 Definition cc_compcert : callconv li_c li_asm :=
-  cc_cklrs^{*} @ Invariant.cc_inv Invariant.wt_c @ lessdef_c @ cc_c_asm @ cc_asm vainj.
+  cc_cklrs^{*} @ Invariant.cc_inv Invariant.wt_c @ lessdef_c @ cc_c_asm @ cc_asm VAInject.vainj.
 
 Section INIT_C_ASM.
 
@@ -489,8 +680,8 @@ Section SYS_ASM.
     Context (se: Genv.symtbl).
     Let ge := Genv.globalenv se prog.
 
-    Definition read_asm : fundef := AST.External (EF_external "read_asm" rw_sig).
-    Definition write_asm : fundef := AST.External (EF_external "write_asm" rw_sig).
+    Definition read_asm : fundef := AST.External (EF_external "read" rw_sig).
+    Definition write_asm : fundef := AST.External (EF_external "write" rw_sig).
     Inductive sys_asm_initial_state: query li_asm -> sys_state -> Prop :=
     | sys_asm_initial_state_read m n b ofs rs:
       Genv.find_funct ge rs#PC = Some read_asm ->
@@ -549,20 +740,173 @@ Section SYS_ASM.
 
 End SYS_ASM.
 
+
+Section FIND_FUNCT.
+  Import Linking.
+  Import AST.
+
+  Definition link_prod {C1 C2} {LC1: Linker C1} {LC2: Linker C2}
+    '(c1, c2) '(c3, c4): option (C1 * C2) :=
+    match link c1 c3, link c2 c4 with
+    | Some c1', Some c2' => Some (c1', c2')
+    | _, _ => None
+    end.
+
+  Inductive linkorder_rel {C1 C2} {LC1: Linker C1} {LC2: Linker C2}:
+    (C1 * C2) -> (C1 * C2) -> Prop :=
+    linkorder_rel_intro c1 c2 c3 c4
+      (H1: linkorder c1 c3) (H2: linkorder c2 c4):
+      linkorder_rel (c1, c2) (c3, c4).
+
+  Program Instance linker_prod {C1 C2} {LC1 : Linker C1} {LC2 : Linker C2} : Linker (C1 * C2) :=
+    {|
+      link := link_prod;
+      linkorder := linkorder_rel;
+    |}.
+  Next Obligation. constructor; eapply linkorder_refl. Qed.
+  Next Obligation.
+    inv H. inv H0. constructor; eapply linkorder_trans; eauto.
+  Qed.
+  Next Obligation.
+    inv H. destruct link eqn: Hx; inv H1.
+    destruct (link c4 c2) eqn: Hy; inv H0.
+    apply link_linkorder in Hx. apply link_linkorder in Hy.
+    split; constructor; easy.
+  Qed.
+
+  Inductive compose_match_fundef {C1 C2 F1 F2 F3}
+    (mf1: C1 -> F1 -> F2 -> Prop) (mf2: C2 -> F2 -> F3 -> Prop): C1 * C2 -> F1 -> F3 -> Prop :=
+  | compose_match_fundef_intro c1 c2 f1 f2 f3
+      (H1: mf1 c1 f1 f2) (H2: mf2 c2 f2 f3):
+      compose_match_fundef mf1 mf2 (c1, c2) f1 f3.
+
+  Lemma match_program_gen_compose
+    {C1 C2 F1 F2 F3 V1 V2 V3}
+    {c1: C1} {c2: C2} {mf1 mf2 mv1 mv2}
+    {p1: AST.program F1 V1} {p2: AST.program F2 V2} {p3: AST.program F3 V3}
+    {LC1: Linker C1} {LC2: Linker C2}:
+    Linking.match_program_gen mf1 mv1 c1 p1 p2 ->
+    Linking.match_program_gen mf2 mv2 c2 p2 p3 ->
+    Linking.match_program_gen (compose_match_fundef mf1 mf2)
+      (rel_compose mv1 mv2) (c1, c2) p1 p3.
+  Proof.
+    intros (A1 & A2 & A3) (B1 & B2 & B3).
+    repeat apply conj; try congruence.
+    clear - A1 B1. revert A1 B1.
+    generalize (prog_defs p1) as l1.
+    generalize (prog_defs p2) as l2.
+    generalize (prog_defs p3) as l3.
+    induction l3; intros * H1 H2; inv H1; inv H2. constructor.
+    constructor.
+    - inv H. inv H5. constructor. congruence.
+      destruct a. destruct b1. destruct a1. cbn in *. subst.
+      destruct g1.
+      + inv H2. inv H3. econstructor; eauto. split; eauto.
+        econstructor; eauto.
+      + inv H2. inv H3. econstructor; eauto.
+        inv H1. inv H2. constructor. eexists; split; eauto.
+    - eapply IHl3; eauto.
+  Defined.
+
+  Hypothesis (Hopt1: Compopts.optim_tailcalls tt = false).
+  Hypothesis (Hopt2: Compopts.optim_constprop tt = false).
+  Hypothesis (Hopt3: Compopts.optim_CSE tt = false).
+  Hypothesis (Hopt4: Compopts.optim_redundancy tt = false).
+  Hypothesis (Hopt5: Compopts.debug tt = false).
+
+  Lemma compcert_match_program_gen p tp:
+    match_prog p tp ->
+    exists (C: Type) (LC: Linker C) (c: C) mf mv,
+      match_program_gen mf mv c p tp /\
+      forall x t, mf x read t -> t = read_asm.
+  Proof.
+    intros H. cbn in *. eprod_crush. subst.
+    destruct H as (A & A1). red in A.
+    pose proof (match_program_gen_compose A H0) as B. clear A H0.
+    pose proof (match_program_gen_compose B H1) as C. clear B H1.
+    pose proof (match_program_gen_compose C H2) as D. clear C H2.
+    pose proof (match_program_gen_compose D H3) as E. clear D H3.
+    red in H4. rewrite Hopt1 in H4. subst.
+    pose proof (match_program_gen_compose E H5) as F. clear E H5.
+    pose proof (match_program_gen_compose F H6) as G. clear F H6.
+    red in H7. rewrite Hopt2 in H7. subst.
+    red in H8. rewrite Hopt2 in H8. subst.
+    red in H9. rewrite Hopt3 in H9. subst.
+    red in H10. rewrite Hopt4 in H10. subst.
+    pose proof (match_program_gen_compose G H11) as H. clear G H11.
+    pose proof (match_program_gen_compose H H12) as I. clear H H12.
+    pose proof (match_program_gen_compose I H13) as J. clear I H13.
+    pose proof (match_program_gen_compose J H14) as K. clear J H14.
+    red in H15. rewrite Hopt5 in H15. subst.
+    pose proof (match_program_gen_compose K H16) as L. clear K H16.
+    pose proof (match_program_gen_compose L H17) as M. clear L H17.
+
+    match goal with
+    | [ H: @match_program_gen ?C ?F1 ?V1 ?F2 ?V2 ?LC ?mf ?mv ?c ?p1 ?p2 |- _ ] =>
+        exists C, LC, c, mf, mv
+    end.
+    split; eauto.
+    intros c t Hx.
+    (* repeat match goal with *)
+    (*        | [ H: linkorder _ (_, _) |- _ ] => inv H *)
+    (*        end. *)
+    repeat match goal with
+           | [ H: compose_match_fundef _ _ _ _ _ |- _ ] => inv H
+           end.
+    repeat match goal with
+    | [H: SimplLocals.transf_fundef _ = Errors.OK _ |- _] => inv H
+    | [H: Cshmgenproof.match_fundef _ _ _ |- _ ] => inv H
+    | [H: Cminorgen.transl_fundef _ = Errors.OK _ |- _] => inv H
+    | [H: Selectionproof.match_fundef _ _ _ |- _ ] =>
+        let H1 := fresh "H" in
+        destruct H as (? & ? & H1); inv H1
+    | [H: RTLgen.transl_fundef _ = Errors.OK _ |- _] => inv H
+    | [H: Inlining.transf_fundef _ _ = Errors.OK _ |- _] => inv H
+    | [H: Allocation.transf_fundef _ = Errors.OK _ |- _] => inv H
+    | [H: Renumber.transf_fundef _ = Errors.OK _ |- _] => inv H
+    | [H: Linearize.transf_fundef _ = Errors.OK _ |- _] => inv H
+    | [H: Stacking.transf_fundef _ = Errors.OK _ |- _] => inv H
+    | [H: Asmgen.transf_fundef _ = Errors.OK _ |- _] => inv H
+           end.
+    reflexivity.
+  Qed.
+
+  Lemma match_prog_read p tp f se tse vf tvf:
+    match_prog p tp ->
+    Genv.match_stbls f se tse ->
+    Val.inject f vf tvf ->
+    Genv.find_funct (Clight.globalenv se p) vf = Some read ->
+    Genv.find_funct (Genv.globalenv tse tp) tvf = Some read_asm.
+  Proof.
+    intros HP HS HI HF.
+    eapply compcert_match_program_gen in HP
+        as (C & LC & c & mf & mv & H & HX); eauto.
+    eapply Genv.find_funct_match in H as (c0 & tfd & HW & HY & HZ); eauto.
+    rewrite HW. f_equal. eapply HX; eauto.
+  Qed.
+
+  Lemma match_program_gen_id {F V} (p: AST.program F V):
+    match_program_gen (fun _ => eq) eq tt p p.
+  Proof.
+    split. 2: eauto.
+    generalize (prog_defs p) as l.
+    induction l; intros; constructor; eauto.
+    constructor. reflexivity.
+    destruct a. cbn. destruct g; repeat econstructor; eauto.
+    destruct v. constructor. reflexivity.
+    Unshelve. exact tt.
+  Qed.
+
+End FIND_FUNCT.
+
 Section SYS_C_ASM.
 
   Local Transparent Archi.ptr64.
-
-  Require Import CallconvAlgebra CallConv CKLR.
-  Require Import Inject.
-  Require Import InjectFootprint.
-  Require Import Extends.
-  Require Import VAInject.
-  Require Import VAExtends.
+  Import CallconvAlgebra CallConv CKLR.
+  Import Inject InjectFootprint Extends VAInject VAExtends.
 
 (* Definition cc_cklrs : callconv li_c li_c := *)
 (*   injp + inj + ext + vainj + vaext. *)
-
 
   Inductive acc_cklr : ccworld cc_cklrs -> ccworld cc_cklrs -> Prop :=
   | acc_cklr_vaext w w':
@@ -594,6 +938,18 @@ Section SYS_C_ASM.
       mp_cklr (inl (inl (inl (inr w)))) b ofs b' ofs'
   | mp_cklr_injp w b ofs b' ofs' (HP: ptrbits_inject (mi injp w) (b, ofs) (b', ofs')):
       mp_cklr (inl (inl (inl (inl w)))) b ofs b' ofs'.
+
+  Inductive mv_cklr: ccworld cc_cklrs -> val -> val -> Prop :=
+  | mv_cklr_vaext w v v' (HV: Val.inject (mi vaext w) v v'):
+      mv_cklr (inr w) v v'
+  | mv_cklr_vainj w v v' (HV: Val.inject (mi vainj w) v v'):
+      mv_cklr (inl (inr w)) v v'
+  | mv_cklr_ext w v v' (HV: Val.inject (mi ext w) v v'):
+      mv_cklr (inl (inl (inr w))) v v'
+  | mv_cklr_inj w v v' (HV: Val.inject (mi inj w) v v'):
+      mv_cklr (inl (inl (inl (inr w)))) v v'
+  | mv_cklr_injp w v v' (HV: Val.inject (mi injp w) v v'):
+      mv_cklr (inl (inl (inl (inl w)))) v v'.
 
   Lemma inject_bytes j bytes y:
     list_rel (memval_inject j) (map Byte bytes) y ->
@@ -665,187 +1021,6 @@ Section SYS_C_ASM.
     - destruct bytes. congruence. cbn in g. lia.
   Qed.
 
-  Program Definition mem_write_empty (m: Mem.mem) b :=
-    (Mem.mkmem (PMap.set b (m.(Mem.mem_contents)!!b) m.(Mem.mem_contents))
-       m.(Mem.mem_access) m.(Mem.nextblock) m.(Mem.alloc_flag) _ _ _).
-  Next Obligation. apply Mem.access_max. Qed.
-  Next Obligation. eauto using Mem.nextblock_noaccess. Qed.
-  Next Obligation.
-    destruct (peq b b0).
-    - subst. rewrite PMap.gss. apply Mem.contents_default.
-    - rewrite PMap.gso; eauto. apply Mem.contents_default.
-  Qed.
-
-  Definition cklr_mem_write_empty_match (c: cklr) :=
-    forall w m1 m2 b1 b2, match_mem c w m1 m2 ->
-    exists w', w ~> w' /\ match_mem c w' (mem_write_empty m1 b1) (mem_write_empty m2 b2).
-
-  Lemma storebytes_empty m b ofs:
-    Mem.storebytes m b ofs nil = Some (mem_write_empty m b).
-  Proof.
-    unfold Mem.storebytes; cbn. destruct Mem.range_perm_dec.
-    - f_equal. destruct m. cbn. apply Mem.mkmem_ext; eauto.
-    - exfalso. apply n. intros p Hp. lia.
-  Qed.
-
-  Lemma cklr_storebytes_empty (c: cklr) (w: world c) m1 m2 m3 b1 b2 ofs1 ofs2:
-    cklr_mem_write_empty_match c ->
-    Mem.storebytes m1 b1 (Ptrofs.unsigned ofs1) nil = Some m3 ->
-    match_mem c w m1 m2 ->
-    exists wx m4, w ~> wx
-             /\ Mem.storebytes m2 b2 (Ptrofs.unsigned ofs2) nil = Some m4
-             /\ match_mem c wx m3 m4.
-  Proof.
-    intros HC HS HM.
-    specialize (HC _ _ _ b1 b2 HM) as (w' & Hw' & Hc).
-    exists w', (mem_write_empty m2 b2). split; eauto.
-    split. apply storebytes_empty.
-    rewrite storebytes_empty in HS. inv HS. apply Hc.
-  Qed.
-
-  Lemma mem_write_empty_nextblock m b:
-    Mem.nextblock (mem_write_empty m b) = Mem.nextblock m.
-  Proof. unfold mem_write_empty. destruct m. reflexivity. Qed.
-
-  Lemma mem_write_empty_mem_inj f m1 m2 b1 b2:
-    Mem.mem_inj f m1 m2 ->
-    Mem.mem_inj f (mem_write_empty m1 b1) (mem_write_empty m2 b2).
-  Proof.
-    intros H. inv H. econstructor; cbn; eauto.
-    intros. rewrite !PMap.gsident. eauto.
-  Qed.
-
-  Lemma mem_write_empty_inject f m1 m2 b1 b2:
-    Mem.inject f m1 m2 ->
-    Mem.inject f (mem_write_empty m1 b1) (mem_write_empty m2 b2).
-  Proof.
-    intros H. inv H.
-    econstructor; cbn; eauto using mem_write_empty_mem_inj.
-  Qed.
-
-  Lemma inj_mem_write_empty_match: cklr_mem_write_empty_match inj.
-  Proof.
-    unfold cklr_mem_write_empty_match.
-    intros. inv H.
-    eexists. split. reflexivity.
-    rewrite <- (mem_write_empty_nextblock m1 b1).
-    rewrite <- (mem_write_empty_nextblock m2 b2).
-    econstructor. apply mem_write_empty_inject. eauto.
-  Qed.
-
-  Lemma injp_mem_write_empty_match: cklr_mem_write_empty_match injp.
-  Proof.
-    unfold cklr_mem_write_empty_match.
-    intros. inv H.
-    exploit mem_write_empty_inject; eauto. intros HX.
-    eexists (injpw f (mem_write_empty m1 b1) (mem_write_empty m2 b2) HX).
-    split.
-    - constructor; eauto; try (red; easy).
-      + split; cbn; try easy. intros. rewrite PMap.gsident. easy.
-      + split; cbn; try easy. intros. rewrite PMap.gsident. easy.
-      + red. intros. congruence.
-    - constructor.
-  Qed.
-
-  Lemma ext_mem_write_empty_match: cklr_mem_write_empty_match ext.
-  Proof.
-    unfold cklr_mem_write_empty_match.
-    intros. inv H. exists w. split. reflexivity.
-    constructor; eauto using mem_write_empty_mem_inj.
-  Qed.
-
-  Lemma mem_write_empty_extends m1 m2 b1 b2:
-    Mem.extends m1 m2 ->
-    Mem.extends (mem_write_empty m1 b1) (mem_write_empty m2 b2).
-  Proof.
-    intros H. inv H.
-    constructor; cbn; eauto using mem_write_empty_mem_inj.
-  Qed.
-
-  Lemma mem_write_empty_load ch m b b0 ofs:
-    Mem.load ch (mem_write_empty m b) b0 ofs = Mem.load ch m b0 ofs.
-  Proof.
-    Local Transparent Mem.load.
-    unfold Mem.load. cbn. rewrite PMap.gsident. reflexivity.
-  Qed.
-
-  Lemma mem_write_empty_loadbytes m b b0 ofs len:
-    Mem.loadbytes (mem_write_empty m b) b0 ofs len = Mem.loadbytes m b0 ofs len.
-  Proof.
-    unfold Mem.loadbytes. cbn. rewrite PMap.gsident. reflexivity.
-  Qed.
-
-  Lemma mem_write_empty_romatch_all se bc m b:
-    romatch_all se bc m ->
-    romatch_all se bc (mem_write_empty m b).
-  Proof.
-    intros H. red. intros. specialize (H cu H0).
-    red. intros. specialize (H _ _ _ H1 H2). eprod_crush.
-    repeat apply conj; eauto.
-    - intros. eapply H3. erewrite <- mem_write_empty_load; eauto.
-    - intros. eapply H3. erewrite <- mem_write_empty_loadbytes; eauto.
-    - intros. eapply H3. erewrite <- mem_write_empty_load; eauto.
-  Qed.
-
-  Lemma mem_write_empty_smatch bc m b b0 am:
-    smatch bc m b0 am ->
-    smatch bc (mem_write_empty m b) b0 am.
-  Proof.
-    intros H. inv H. constructor.
-    - intros. eapply H0. erewrite <- mem_write_empty_load; eauto.
-    - intros. eapply H1. erewrite <- mem_write_empty_loadbytes; eauto.
-  Qed.
-
-  Lemma mem_write_empty_bmatch bc m b b0 am:
-    bmatch bc m b0 am ->
-    bmatch bc (mem_write_empty m b) b0 am.
-  Proof.
-    intros H. inv H. constructor.
-    - apply mem_write_empty_smatch. eauto.
-    - intros. apply H1. erewrite <- mem_write_empty_load; eauto.
-  Qed.
-
-  Lemma mem_write_empty_mmatch bc m b am:
-    mmatch bc m am ->
-    mmatch bc (mem_write_empty m b) am.
-  Proof.
-    intros H. inv H.
-    constructor; eauto; intros;
-      eauto using mem_write_empty_bmatch, mem_write_empty_smatch.
-  Qed.
-
-  Lemma vaext_mem_write_empty_match: cklr_mem_write_empty_match vaext.
-  Proof.
-    unfold cklr_mem_write_empty_match.
-    intros. inv H.
-    assert (HX: vaext_wf se bc (mem_write_empty m1 b1)).
-    { inv H1. constructor;
-        eauto using mem_write_empty_romatch_all,
-        mem_write_empty_mmatch. }
-    exists (vaextw se bc (mem_write_empty m1 b1) HX). split.
-    - constructor; cbn; eauto. reflexivity.
-      intros. unfold Mem.loadbytes in H4 |- *.
-      rewrite <- H4. cbn. rewrite PMap.gsident. reflexivity.
-    - constructor. eauto using mem_write_empty_extends.
-  Qed.
-
-  Lemma vainj_mem_write_empty_match: cklr_mem_write_empty_match vainj.
-  Proof.
-    unfold cklr_mem_write_empty_match.
-    intros. inv H. exists (se, w0). split. reflexivity.
-    constructor; eauto.
-    - apply mem_write_empty_romatch_all; eauto.
-    - inv H2. rewrite <- (mem_write_empty_nextblock m1 b1).
-      rewrite <- (mem_write_empty_nextblock m2 b2).
-      econstructor. apply mem_write_empty_inject. eauto.
-  Qed.
-
-  Hint Resolve injp_mem_write_empty_match
-               inj_mem_write_empty_match
-               ext_mem_write_empty_match
-               vainj_mem_write_empty_match
-               vaext_mem_write_empty_match.
-
   Lemma cklr_storebytes w m1 m2 m3 b1 ofs1 b2 ofs2 bytes:
     mm_cklr w m1 m2 ->
     mp_cklr w b1 ofs1 b2 ofs2 ->
@@ -900,6 +1075,12 @@ Section SYS_C_ASM.
         mp_cklr w b1 ofs1 b2 ofs2 -> mp_cklrs (existT _ n wn) b2 ofs2 b3 ofs3 ->
         mp_cklrs (existT _ (S n) (se, w, wn)) b1 ofs1 b3 ofs3.
 
+  Inductive mv_cklrs: ccworld (cc_cklrs^{*}) -> val -> val -> Prop :=
+  | mv_cklrs_zero v: mv_cklrs (existT _ 0%nat tt) v v
+  | mv_cklrs_succ n se w wn v1 v2 v3:
+        mv_cklr w v1 v2 -> mv_cklrs (existT _ n wn) v2 v3 ->
+        mv_cklrs (existT _ (S n) (se, w, wn)) v1 v3.
+
   Require Import Classical.
 
   Ltac subst_dep :=
@@ -930,7 +1111,7 @@ Section SYS_C_ASM.
                 q ->
     exists m' b' ofs' vf',
       q = (cq vf' rw_sig [Vint i; Vptr b' ofs'; Vlong len] m')
-      /\ mm_cklr w m m' /\ mp_cklr w b ofs b' ofs'.
+      /\ mm_cklr w m m' /\ mp_cklr w b ofs b' ofs' /\ mv_cklr w vf vf'.
   Proof.
     Ltac solve_cklr_match_query_inv :=
       cbn; intros Hq; inv Hq; repeat inv_inj;
@@ -947,7 +1128,7 @@ Section SYS_C_ASM.
                 q ->
     exists m' b' ofs' vf',
       q = (cq vf' rw_sig [Vint i; Vptr b' ofs'; Vlong len] m')
-      /\ mm_cklrs nw m m' /\ mp_cklrs nw b ofs b' ofs'.
+      /\ mm_cklrs nw m m' /\ mp_cklrs nw b ofs b' ofs' /\ mv_cklrs nw vf vf'.
   Proof.
     destruct nw. cbn. revert vf b ofs m. induction x; cbn.
     - intros. subst. destruct c.
@@ -955,10 +1136,10 @@ Section SYS_C_ASM.
     - cbn in *. destruct c as [[se w] wn].
       intros * (qm & Hq1 & Hq2).
       apply cklr_match_query_inv in Hq1 as
-          (mm & bm & ofsm & vfm & Hqm & Hmm & Hmp).
+          (mm & bm & ofsm & vfm & Hqm & Hmm & Hmp & Hmv).
       subst qm.
       specialize (IHx _ _ _ _ _ Hq2) as
-        (m' & b' & ofs' & vf' & Hq' & Hm' & Hp').
+        (m' & b' & ofs' & vf' & Hq' & Hm' & Hp' & Hv').
       exists m', b', ofs', vf'. repeat split; try econstructor; eauto.
       split. reflexivity. eauto.
   Qed.
@@ -993,6 +1174,8 @@ Section SYS_C_ASM.
 
   Hypothesis (Hwin64: Archi.win64 = false).
 
+  Import ValueDomain ValueAnalysis VAInject.
+
   Inductive mm_ca: ccworld (cc_cklrs^{*}) -> world vainj -> mem -> mem -> mem -> Prop :=
   | mm_ca_intro wn wi wj m1 m2 m3 se mbefore
     (HN: mm_cklrs wn m1 m2) (HI: match_mem inj wj m2 m3) (HJ: wi ~> wj)
@@ -1007,9 +1190,79 @@ Section SYS_C_ASM.
     ptrbits_inject (mi inj wi) (b2, ofs2) (b3, ofs3) ->
     mp_ca wn wi b1 ofs1 b3 ofs3.
 
+  Inductive mv_ca: ccworld (cc_cklrs^{*}) -> world inj -> val -> val -> Prop :=
+  | mv_ca_intro wn wi v1 v2 v3
+    (HN: mv_cklrs wn v1 v2) (HI: Val.inject (mi inj wi) v2 v3):
+    mv_ca wn wi v1 v3.
+
   Lemma mp_cklr_acc w1 w2 b1 ofs1 b2 ofs2:
     mp_cklr w1 b1 ofs1 b2 ofs2 -> acc_cklr w1 w2 -> mp_cklr w2 b1 ofs1 b2 ofs2.
   Proof. intros HP HW. inv HP; inv HW; constructor; rauto. Qed.
+
+  Lemma cklr_find_funct p se1 se2 vf1 vf2 w f:
+    match_senv cc_cklrs w se1 se2 ->
+    mv_cklr w vf1 vf2 ->
+    Genv.find_funct (Clight.globalenv se1 p) vf1 = Some f ->
+    Genv.find_funct (Genv.globalenv se2 p) vf2 = Some f.
+  Proof.
+    intros HSE HVF HF. pose proof (match_program_gen_id p) as H.
+    inv HVF.
+    - cbn in *. inv HSE. cbn in HV. inv HV; eauto.
+      + unfold inj_of_bc in H2.
+        destruct (bc b1); inv H2;
+          rewrite Ptrofs.add_zero; eauto.
+      + unfold Genv.find_funct in HF. inv HF.
+    - destruct w0. cbn in *. destruct HSE as [-> HSE]. inv HSE.
+      eapply Genv.find_funct_match in H as (c & tfd & Hw & Hf & Hm);
+       subst; eauto.
+    - destruct w0. inv HSE. cbn in HV. inv HV; eauto.
+      + inv H0. rewrite Ptrofs.add_zero. eauto.
+      + unfold Genv.find_funct in HF. inv HF.
+    - destruct w0. inv HSE. cbn in *.
+      eapply Genv.find_funct_match in H as (c & tfd & Hw & Hf & Hm);
+       subst; eauto.
+    - destruct w0. inv HSE. cbn in *.
+      eapply Genv.find_funct_match in H as (c & tfd & Hw & Hf & Hm');
+       subst; eauto.
+  Qed.
+
+  Lemma cklrs_find_funct p se1 se2 vf1 vf2 wn f:
+    match_senv (cc_cklrs ^ {*}) wn se1 se2 ->
+    mv_cklrs wn vf1 vf2 ->
+    Genv.find_funct (Clight.globalenv se1 p) vf1 = Some f ->
+    Genv.find_funct (Genv.globalenv se2 p) vf2 = Some f.
+  Proof.
+    destruct wn. revert se1 se2 vf1 vf2. induction x.
+    - cbn. intros. subst. inv H0. eauto.
+    - intros * HSE HV.
+      destruct c as [[se w] wn].
+      destruct HSE as (Hse1 & Hsen).
+      simple inversion HV. inv H. subst.
+      exploit eq_sigT_fst. apply H1. intros HNat. inv HNat.
+      subst_dep. inv H1. intros Hv1 Hvn Hf.
+      eapply IHx. 1, 2: cbn; eauto.
+      eapply cklr_find_funct; eauto.
+  Qed.
+
+  Hypothesis (Hopt1: Compopts.optim_tailcalls tt = false).
+  Hypothesis (Hopt2: Compopts.optim_constprop tt = false).
+  Hypothesis (Hopt3: Compopts.optim_CSE tt = false).
+  Hypothesis (Hopt4: Compopts.optim_redundancy tt = false).
+  Hypothesis (Hopt5: Compopts.debug tt = false).
+
+  Lemma ca_find_funct p tp i se1 se2 se3 vf1 vf2 vf3 wn:
+    match_prog p tp ->
+    match_senv (cc_cklrs ^ {*}) wn se1 se2 ->
+    mv_cklrs wn vf1 vf2 ->
+    inj_stbls i se2 se3 ->
+    Val.inject i vf2 vf3 ->
+    Genv.find_funct (Clight.globalenv se1 p) vf1 = Some read ->
+    Genv.find_funct (Genv.globalenv se3 tp) vf3 = Some read_asm.
+  Proof.
+    intros HMP HSE HVF HI HVF2 HF.
+    eapply cklrs_find_funct in HF. 2, 3: eauto. clear HSE HVF.
+    eapply match_prog_read; eauto. apply HI. apply HF.
+  Qed.
 
   Lemma cklrs_loadbytes w m b ofs m' b' ofs' len bytes:
     mm_cklrs w m m' ->
@@ -1163,7 +1416,7 @@ Section SYS_C_ASM.
         cbn in ms; inv HI.
       + (* cklrs *)
         eapply (cklrs_match_query_inv (existT _ x2 c0)) in H2 as
-            (mx & bx & ofsx & vfx & Hqx & Hmx & Hpx). subst x0.
+            (mx & bx & ofsx & vfx & Hqx & Hmx & Hpx & Hvx). subst x0.
         (* lessdef *)
         inv H4. repeat inv_lessdef.
         (* cc_c_asm: need to show args_removed changes nothing *)
@@ -1184,8 +1437,7 @@ Section SYS_C_ASM.
         eexists (sys_read_query n b' ofs' m). split.
         * econstructor; eauto.
           -- cbn in H0. eprod_crush. subst. inv H2.
-             cbn in H.
-            admit.
+             cbn in Hreg. eapply ca_find_funct; eauto. cbn; eauto.
           -- specialize (Hreg RDI). rewrite <- H4 in Hreg. inv Hreg; eauto.
           -- specialize (Hreg RDX). rewrite <- H8 in Hreg. inv Hreg; eauto.
         * econstructor; try reflexivity.
@@ -1198,7 +1450,7 @@ Section SYS_C_ASM.
           -- instantiate (1:= r0). apply Hreg.
       + (* cklrs *)
         eapply (cklrs_match_query_inv (existT _ x2 c0)) in H2 as
-            (mx & bx & ofsx & vfx & Hqx & Hmx & Hpx). subst x0.
+            (mx & bx & ofsx & vfx & Hqx & Hmx & Hpx & Hvx). subst x0.
         (* lessdef *)
         inv H4. repeat inv_lessdef.
         (* cc_c_asm: need to show args_removed changes nothing *)
@@ -1218,7 +1470,8 @@ Section SYS_C_ASM.
           eexists _, _. split; eauto. }
         exists (sys_write_query bytes m). split.
         * econstructor; eauto.
-          -- admit.
+          -- cbn in H0.
+            admit.
           -- specialize (Hreg RDI). rewrite <- H4 in Hreg. inv Hreg; eauto.
           -- specialize (Hreg RDX). rewrite <- H8 in Hreg. inv Hreg; eauto.
           -- inv Him. eapply ca_loadbytes; eauto.
@@ -1309,13 +1562,6 @@ Section SYS_C_ASM.
     - easy.
     - easy.
   Admitted.
-
-(*   H0 : match_senv (cc_cklrs ^ x2) c0 se1 s0 *)
-(*   H12 : inj_stbls i s0 se2 *)
-(* match_prog p tp *)
-
-(* H3 : Genv.find_funct (Clight.globalenv se1 p) vf = Some read *)
-(* Genv.find_funct (Genv.globalenv se2 tp) (r0 PC) = Some read_asm *)
 
 End SYS_C_ASM.
 
