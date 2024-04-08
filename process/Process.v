@@ -185,13 +185,14 @@ Section NTH.
 End NTH.
 
 Notation hello_bytes := [ Byte.repr 104; Byte.repr 101; Byte.repr 108; Byte.repr 108; Byte.repr 111 ].
-Notation urbby_bytes := [ Byte.repr 117; Byte.repr 114; Byte.repr 98; Byte.repr 98; Byte.repr 121].
-Notation tqaax_bytes := [ Byte.repr 116; Byte.repr 113; Byte.repr 97; Byte.repr 97; Byte.repr 120].
-Definition rot13'_byte (b: byte) : byte := Byte.sub b Byte.one.
-Definition rot13_byte (b: byte) : byte. Admitted.
+Notation uryyb_bytes := [ Byte.repr 117; Byte.repr 114; Byte.repr 121; Byte.repr 121; Byte.repr 98].
+Definition rot13_byte (b: byte) : byte :=
+  Byte.add (Byte.modu (Byte.sub b (Byte.repr 84)) (Byte.repr 26)) (Byte.repr 97).
 Definition rot13_bytes : list byte -> list byte := map rot13_byte.
-Lemma rot13_bytes_hello: rot13_bytes hello_bytes = urbby_bytes. Admitted.
-Lemma rot13_bytes_urbby: rot13_bytes urbby_bytes = hello_bytes. Admitted.
+Lemma rot13_bytes_hello: rot13_bytes hello_bytes = uryyb_bytes.
+Proof. cbn. repeat f_equal. Qed.
+Lemma rot13_bytes_urbby: rot13_bytes uryyb_bytes = hello_bytes.
+Proof. cbn. repeat f_equal. Qed.
 
 Notation tvoid := (Tvoid).
 Notation tchar := (Tint I8 Unsigned noattr).
@@ -217,9 +218,9 @@ Definition secret_msg_id: positive := 3.
 Definition msg_il : list init_data :=
   [ Init_int8 (Int.repr 117); (* u *)
     Init_int8 (Int.repr 114); (* r *)
-    Init_int8 (Int.repr 98); (* b *)
-    Init_int8 (Int.repr 98); (* b *)
-    Init_int8 (Int.repr 121) ]. (* y *)
+    Init_int8 (Int.repr 121); (* y *)
+    Init_int8 (Int.repr 121); (* y *)
+    Init_int8 (Int.repr 98) ]. (* b *)
 
 Definition msg_globvar : globvar type :=
   {|
@@ -272,7 +273,7 @@ Section SECRET_SPEC.
   | secret_spec_initial_state_intro q: secret_spec_initial_state q secret1.
   Inductive secret_spec_at_external: secret_state -> query (li_sys + li_sys) -> Prop :=
   | secret_spec_at_external_intro bytes:
-    bytes = urbby_bytes ->
+    bytes = uryyb_bytes ->
     secret_spec_at_external secret2 (inr (write_query bytes)).
   Inductive secret_spec_after_external: secret_state -> reply (li_sys + li_sys) -> secret_state -> Prop :=
   | secret_spec_after_external_intro n:
@@ -450,7 +451,7 @@ Section SECRET_FSIM.
       (st2 (init_c secret_program) L1 None
          (st2 (semantics1 secret_program) (sys_c secret_program)
          (Callstate vf args (Kcall None secret_main empty_env (PTree.empty val) (Kseq (Sreturn (Some (Econst_int (Int.repr 0) tint))) Kstop)) m)
-         (sys_write_query urbby_bytes m)))
+         (sys_write_query uryyb_bytes m)))
   | secret_match_state3 vf n m args:
     secret_match_state se secret3
       (st2 (init_c secret_program) L1 None
@@ -476,7 +477,7 @@ Section SECRET_FSIM.
     Genv.valid_for (erase_program secret_program) se ->
     exists m, init_mem se (erase_program secret_program) = Some m /\
            (forall b, Genv.find_symbol se secret_msg_id = Some b ->
-                 Mem.loadbytes m b (Ptrofs.unsigned Ptrofs.zero) 5 = Some (map Byte urbby_bytes)).
+                 Mem.loadbytes m b (Ptrofs.unsigned Ptrofs.zero) 5 = Some (map Byte uryyb_bytes)).
   Proof.
     intros Hvalid.
     edestruct init_mem_exists with
@@ -552,7 +553,7 @@ Section SECRET_FSIM.
       split; repeat constructor.
     - intros. inv H1. inv H. cbn in *. exists Int.zero.
       split; repeat constructor.
-    - intros. inv H1. inv H. exists tt, (inr (write_query urbby_bytes)).
+    - intros. inv H1. inv H. exists tt, (inr (write_query uryyb_bytes)).
       repeat apply conj; try repeat constructor.
       intros. inv H. inv H1.
       eexists. split. 2: constructor.
@@ -611,28 +612,13 @@ Require Import Cop.
 
 Definition rot13_rot13_body : statement :=
   let c := Evar rot13_rot13_c_id tchar in
-  (* let a := Econst_int (Int.repr 65) tint in *)
-  (* let z := Econst_int (Int.repr 91) tint in *)
-  let m := Econst_int (Int.repr 109) tint in
-  let thirteen := Econst_int (Int.repr 13) tint in
-  (* Sifthenelse *)
-  (*   (* if c >= 'a' && c <= 'z' *) *)
-  (*   (Ebinop Oand (Ebinop Oge c a tint) (Ebinop Ole c z tint) tint) *)
-  (*   ( *)
-      (* if c <= 'm' *)
-      Sifthenelse (Ebinop Ole c m tint)
-        (* return c + 13 *)
-        (Sreturn (Some (Ebinop Osub c thirteen tint)))
-        (* return c - 13 *)
-        (Sreturn (Some (Ebinop Oadd c thirteen tint))).
-    (* ) *)
-    (* (* return c *) *)
-    (* (Sreturn (Some c)). *)
-
-Definition rot13_rot13'_body : statement :=
-  let c := Evar rot13_rot13_c_id tchar in
-  let one := Econst_int (Int.repr 1) tint in
-  (Sreturn (Some (Ebinop Osub c one tint))).
+  let i97 := Econst_int (Int.repr 97) tint in
+  let i84 := Econst_int (Int.repr 84) tint in
+  let i26 := Econst_int (Int.repr 26) tint in
+  let c1 := Ebinop Osub c i84 tint in
+  let c2 := Ebinop Omod c1 i26 tint in
+  let c3 := Ebinop Oadd c2 i97 tint in
+  Sreturn (Some c3).
 
 Definition rot13_rot13 : function :=
   {|
@@ -641,7 +627,7 @@ Definition rot13_rot13 : function :=
     fn_params := [ (rot13_rot13_c_id, tchar) ];
     fn_temps := [];
     fn_vars := [];
-    fn_body := rot13_rot13'_body;
+    fn_body := rot13_rot13_body;
   |}.
 
 Definition rot13_type := Tfunction (Tcons tchar Tnil) tchar cc_default.
@@ -729,9 +715,10 @@ Section ROT13_SPEC.
   | rot13_spec_step1: rot13_spec_step rot13_read0 E0 rot13_read
   | rot13_spec_step2 bytes:
     rot13_spec_step (rot13_write0 bytes) E0 (rot13_writei bytes 0)
-  | rot13_spec_stepi bytes bytes' i:
+  | rot13_spec_stepi bytes bytes' i
+      (HB: forall b, nth bytes (Z.to_nat i) b -> Byte.unsigned b >= 97):
     0 <= i < Z.of_nat (length bytes) ->
-    nth_update bytes (Z.to_nat i) rot13'_byte bytes' ->
+    nth_update bytes (Z.to_nat i) rot13_byte bytes' ->
     rot13_spec_step (rot13_writei bytes i) E0 (rot13_writei bytes' (i + 1))
   | rot13_spec_step3 bytes i:
     i = Z.of_nat (length bytes) ->
@@ -958,26 +945,49 @@ Section ROT13_FSIM.
     destruct Archi.ptr64; cbn; lia.
   Qed.
 
-  Lemma byte_minus_one byte:
-    Int.repr (Byte.unsigned (Byte.sub byte Byte.one)) =
-      Int.zero_ext 8 (Int.zero_ext 8 (Int.sub (Int.zero_ext 8 (Int.repr (Byte.unsigned byte))) (Int.repr 1))).
+  Lemma byte_correct byte:
+    Byte.ltu (Byte.repr 96) byte = true ->
+    (Int.repr (Byte.unsigned (rot13_byte byte))) =
+      (Int.zero_ext 8
+          (Int.zero_ext 8
+             (Int.add (Int.modu (Int.sub (Int.zero_ext 8 (Int.repr (Byte.unsigned byte))) (Int.repr 84)) (Int.repr 26))
+                (Int.repr 97)))).
   Proof.
+    intros H. unfold rot13_byte.
     rewrite Int.zero_ext_idem by lia.
     unfold Int.zero_ext. rewrite !Zbits.Zzero_ext_mod by lia.
     pose proof (Byte.unsigned_range_2 byte) as Hx; cbn in Hx.
-    repeat rewrite !Z.mod_small; try rewrite !Int.repr_unsigned.
-    - unfold Int.sub, Byte.sub. f_equal.
-      rewrite !Int.unsigned_repr; cbn; try lia.
-      unfold Byte.one.
-      repeat rewrite !Byte.unsigned_repr; cbn; try lia.
-      split; try lia.
-      admit.
-    - change (two_p 8) with 256.
-      rewrite Int.unsigned_repr; cbn; lia.
-    - admit.
-    - change (two_p 8) with 256.
-      rewrite Int.unsigned_repr; cbn; lia.
-  Admitted.
+    rewrite Int.unsigned_repr by (cbn; lia).
+    repeat rewrite !Z.mod_small. all: change (two_p 8) with 256.
+    2, 4: lia.
+    2: {
+      unfold Int.sub. rewrite !Int.unsigned_repr by (cbn; lia).
+      assert (0 <= Byte.unsigned byte - 84 < 256).
+      { unfold Byte.ltu in H. destruct zlt; inv H.
+        rewrite Byte.unsigned_repr in l by (cbn; lia). lia. }
+      unfold Int.modu. rewrite !Int.unsigned_repr by (cbn; lia).
+      assert (0 <= (Byte.unsigned byte - 84) mod 26 < 256).
+      { exploit (Z.mod_pos_bound (Byte.unsigned byte - 84) 26). lia. lia. }
+      unfold Int.add. rewrite !Int.unsigned_repr. all: try (cbn; lia).
+      2: { rewrite !Int.unsigned_repr by (cbn; lia). cbn. lia. }
+    exploit (Z.mod_pos_bound (Byte.unsigned byte - 84) 26). lia. lia.
+    }
+    f_equal.
+    unfold Int.sub. rewrite !Int.unsigned_repr by (cbn; lia).
+    unfold Byte.sub. rewrite Byte.unsigned_repr by (cbn; lia).
+    assert (0 <= Byte.unsigned byte - 84 < 256).
+    { unfold Byte.ltu in H. destruct zlt; inv H.
+      rewrite Byte.unsigned_repr in l by (cbn; lia). lia. }
+    unfold Int.modu. rewrite !Int.unsigned_repr by (cbn; lia).
+    unfold Byte.modu. rewrite !Byte.unsigned_repr by (cbn; lia).
+    assert (0 <= (Byte.unsigned byte - 84) mod 26 < 256).
+    { exploit (Z.mod_pos_bound (Byte.unsigned byte - 84) 26). lia. lia. }
+    unfold Int.add. rewrite !Int.unsigned_repr. all: try (cbn; lia).
+    2: { rewrite !Int.unsigned_repr by (cbn; lia). cbn. lia. }
+    unfold Byte.add. rewrite !Byte.unsigned_repr. all: try (cbn; lia).
+    rewrite !Byte.unsigned_repr by (cbn; lia). cbn. split; try lia.
+    exploit (Z.mod_pos_bound (Byte.unsigned byte - 84) 26). lia. lia.
+  Qed.
 
   Lemma rot13_fsim: forward_simulation 1 1 rot13_spec rot13_c.
   Proof.
@@ -1043,7 +1053,7 @@ Section ROT13_FSIM.
           intros p Hperm. eapply Mem.perm_implies. apply HPERM.
           rewrite map_length in Hperm. lia. auto with mem. }
         eexists. split.
-        eapply plus_left. (* sys returns to rot13.c, and storebytes "urbby" *)
+        eapply plus_left. (* sys returns to rot13.c, and storebytes "uryyb" *)
         { eapply step2. eapply step_pop; econstructor; eauto. }
         2: { instantiate (1 := E0). reflexivity. }
         one_trivial_step. (* internal step of rot13.c: Returnstate *)
@@ -1075,7 +1085,7 @@ Section ROT13_FSIM.
         { edestruct Mem.range_perm_free as (m3 & Hm3).
           2: cbn; eexists; rewrite Hm3; eauto.
           intros p Hp. eauto with mem. }
-        assert (exists m4, Mem.store Mint8unsigned m3 buf_block i (Vint (Int.repr (Byte.unsigned (rot13'_byte byte)))) = Some m4)
+        assert (exists m4, Mem.store Mint8unsigned m3 buf_block i (Vint (Int.repr (Byte.unsigned (rot13_byte byte)))) = Some m4)
                  as (m4 & Hm4).
         { edestruct Mem.valid_access_store as (m4 & Hm4); eauto. split; cbn.
           - intros p Hp. cbn in Hm3. destruct Mem.free eqn: Hfree; inv Hm3.
@@ -1114,13 +1124,18 @@ Section ROT13_FSIM.
         { eapply step2. eapply step1; crush_step; crush_expr.
           - eapply Mem.load_store_same; eauto.
           - crush_expr.
+          - crush_expr.
+          - crush_expr.
           - cbn. reflexivity. }
         one_trivial_step. (* internal step of rot13.c: Returnstate *)
         one_trivial_step. (* internal step of rot13.c: Sskip *)
         one_step.
         { eapply step2. eapply step1. crush_step; crush_expr.
           rewrite ptrofs_lemma1 by lia.
-          rewrite <- byte_minus_one.
+          rewrite <- byte_correct.
+          2: { specialize (HB _ Hbyte).
+               unfold Byte.ltu. destruct zlt; try easy.
+               rewrite Byte.unsigned_repr in g; try (cbn; lia). }
           apply Hm4. }
         one_trivial_step. (* internal step of rot13.c: Sskip *)
         one_trivial_step. (* internal step of rot13.c: Sset *)
@@ -1209,7 +1224,7 @@ Section HELLO_SPEC.
   | hello_spec_initial_state_intro q: hello_spec_initial_state q hello1.
   Inductive hello_spec_at_external: hello_state -> query (li_sys + li_sys) -> Prop :=
   | hello_spec_at_external_intro bytes:
-    bytes = tqaax_bytes ->
+    bytes = hello_bytes ->
     hello_spec_at_external hello2 (inr (write_query bytes)).
   Inductive hello_spec_after_external: hello_state -> reply (li_sys + li_sys) -> hello_state -> Prop :=
   | hello_spec_after_external_intro n:
@@ -1251,12 +1266,12 @@ Section PIPE_CORRECT.
   | pipe_match_state2 buf:
     pipe_match_state hello2
       (st2 L1 pipe_operator
-         (st2 seq (with_semantics secret_spec rot13_spec hello_skel) seq2 (inr (rot13_write tqaax_bytes)), buf)
-         (pipe2_write_query tqaax_bytes []))
+         (st2 seq (with_semantics secret_spec rot13_spec hello_skel) seq2 (inr (rot13_write hello_bytes)), buf)
+         (pipe2_write_query hello_bytes []))
   | pipe_match_state3 buf n:
     pipe_match_state hello3
       (st2 L1 pipe_operator
-         (st2 seq (with_semantics secret_spec rot13_spec hello_skel) seq2 (inr (rot13_write tqaax_bytes)), buf)
+         (st2 seq (with_semantics secret_spec rot13_spec hello_skel) seq2 (inr (rot13_write hello_bytes)), buf)
          (pipe2_write_reply n []))
   | pipe_match_state4:
     pipe_match_state hello4
@@ -1282,19 +1297,19 @@ Section PIPE_CORRECT.
         cbn. exists Int.zero. split; repeat constructor.
       * exists (tt, (tt, (tt, []))). split; repeat constructor; eauto.
     - intros. cbn in *. eprod_crush. inv H3. unfold id in H5. subst. inv H2.
-      exists (inr (write_query tqaax_bytes)). split.
+      exists (inr (write_query hello_bytes)). split.
       * repeat constructor.
       * exists tt, tt. repeat split; eauto.
         destruct H3 as (r' & Hr1 & Hr2). unfold id in Hr1. subst. inv Hr2.
         exists (st2 L1 pipe_operator
-             (st2 seq (with_semantics secret_spec rot13_spec hello_skel) seq2 (inr (rot13_write tqaax_bytes)), buf)
+             (st2 seq (with_semantics secret_spec rot13_spec hello_skel) seq2 (inr (rot13_write hello_bytes)), buf)
              (pipe2_write_reply n [])). split.
         -- exists (inr (write_reply n)). split; eauto. repeat constructor.
         -- exists tt, (tt, (tt, (tt, buf))). split; repeat constructor.
     - intros. cbn in *. eprod_crush. exists tt. inv H2; inv H3.
       * eexists (st2 L1 pipe_operator
-                   (st2 seq (with_semantics secret_spec rot13_spec hello_skel) seq2 (inr (rot13_write tqaax_bytes)), [])
-                   (pipe2_write_query tqaax_bytes [])).
+                   (st2 seq (with_semantics secret_spec rot13_spec hello_skel) seq2 (inr (rot13_write hello_bytes)), [])
+                   (pipe2_write_query hello_bytes [])).
         split.
         -- left. eapply plus_left. (* seq calls secret *)
            { repeat econstructor. instantiate (1 := (_, _)). split; eauto.
@@ -1339,19 +1354,29 @@ Section PIPE_CORRECT.
            (* loop 5 times to decode the buffer *)
            one_step.
            { eapply step1. instantiate (1 := (_, _)). split; eauto.
-             apply step2. repeat constructor. lia. }
+             apply step2. repeat constructor.
+             intros b Hb. inv Hb.
+             rewrite Byte.unsigned_repr by (cbn; lia). all: lia. }
            one_step.
            { eapply step1. instantiate (1 := (_, _)). split; eauto.
-             apply step2. repeat constructor. lia. }
+             apply step2. repeat constructor.
+             intros b Hb. inv Hb. inv H5.
+             rewrite Byte.unsigned_repr by (cbn; lia). all: lia. }
            one_step.
            { eapply step1. instantiate (1 := (_, _)). split; eauto.
-             apply step2. repeat constructor. lia. }
+             apply step2. repeat constructor.
+             intros b Hb. inv Hb. inv H5. inv H6.
+             rewrite Byte.unsigned_repr by (cbn; lia). all: lia. }
            one_step.
            { eapply step1. instantiate (1 := (_, _)). split; eauto.
-             apply step2. repeat constructor. lia. }
+             apply step2. repeat constructor.
+             intros b Hb. inv Hb. inv H5. inv H6. inv H5.
+             rewrite Byte.unsigned_repr by (cbn; lia). all: lia. }
            one_step.
            { eapply step1. instantiate (1 := (_, _)). split; eauto.
-             apply step2. repeat constructor. lia. }
+             apply step2. repeat constructor.
+             intros b Hb. inv Hb. inv H5. inv H6. inv H5. inv H6.
+             rewrite Byte.unsigned_repr by (cbn; lia). all: lia. }
            (* exit loop *)
            one_step.
            { eapply step1. instantiate (1 := (_, _)). split; eauto.
