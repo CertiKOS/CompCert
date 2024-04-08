@@ -10,6 +10,14 @@ Definition empty_skel: AST.program unit unit :=
     AST.prog_main := None;
   |}.
 
+Lemma empty_linkorder sk:
+  Linking.linkorder empty_skel sk.
+Proof.
+  repeat apply conj.
+  - constructor.
+  - apply incl_nil_l.
+  - intros. inv H.
+Qed.
 
 Definition with_ (liA liB: language_interface): language_interface :=
   {|

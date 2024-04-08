@@ -2,12 +2,12 @@ Require Import Coqlib Integers.
 
 Require Import Events LanguageInterface Smallstep Globalenvs Values Memory.
 Require Import AST Ctypes Clight.
-Require Import Lifting Encapsulation.
+Require Import CategoricalComp Lifting Encapsulation.
 
 Require Import List Maps.
 Import ListNotations.
 
-Require Import Load With InitMem.
+Require Import Load With InitMem Pipe.
 
 Section NTH.
 
@@ -210,7 +210,6 @@ Definition write : fundef :=
 Definition read : fundef :=
   External (EF_external "read" rw_sig) rw_parameters tint cc_default.
 
-
 Definition secret_main_id: positive := 1.
 Definition secret_write_id: positive := 2.
 Definition secret_msg_id: positive := 3.
@@ -260,9 +259,7 @@ Program Definition secret_program : Clight.program :=
     prog_types := [];
     prog_comp_env := (PTree.empty _);
   |}.
-
-
-Require Import CategoricalComp.
+Next Obligation. reflexivity. Qed.
 
 Definition secret_c : Smallstep.semantics (li_sys + li_sys) li_wp := load_c secret_program.
 
@@ -699,6 +696,7 @@ Program Definition rot13_program : Clight.program :=
     prog_types := [];
     prog_comp_env := (PTree.empty _);
   |}.
+Next Obligation. reflexivity. Qed.
 
 Definition rot13_c : semantics (li_sys + li_sys) li_wp := load_c rot13_program.
 
@@ -1200,123 +1198,7 @@ Section ROT13_FSIM.
 
 End ROT13_FSIM.
 
-Section SEQ.
-
-  Variant seq_state := | seq1 | seq2 | ret (n: int).
-  Inductive seq_initial_state: query li_wp -> seq_state -> Prop :=
-  | seq_initial_state_intro q: seq_initial_state q seq1.
-  Inductive seq_at_external: seq_state -> query (li_wp + li_wp) -> Prop :=
-  | seq_at_external1: seq_at_external seq1 (inl tt)
-  | seq_at_external2: seq_at_external seq2 (inr tt).
-  Inductive seq_after_external: seq_state -> reply (li_wp + li_wp) -> seq_state -> Prop :=
-  | seq_after_external1 n: seq_after_external seq1 (inl n) seq2
-  | seq_after_external2 n: seq_after_external seq2 (inr n) (ret n).
-  Inductive seq_final_state: seq_state -> reply li_wp -> Prop :=
-  | seq_final_state_intro n: seq_final_state (ret n) n.
-
-  Definition seq: semantics (li_wp + li_wp) li_wp :=
-    {|
-      activate se :=
-        {|
-          Smallstep.step _ _ _ _ := False;
-          Smallstep.initial_state := seq_initial_state;
-          Smallstep.at_external := seq_at_external;
-          Smallstep.after_external := seq_after_external;
-          Smallstep.final_state := seq_final_state;
-          Smallstep.globalenv := tt;
-        |};
-      skel := empty_skel;
-      footprint i := False;
-    |}.
-
-End SEQ.
-
-Definition pipe_state := list byte.
-Instance pset_pipe_state : PSet pipe_state :=
-  { pset_init _ := [] }.
-
-Section PIPE.
-
-  Definition pipe_in := (((li_sys + li_sys) + (li_sys + li_sys)) @ pipe_state)%li.
-  Definition encap_pipe_in := ((li_sys + li_sys) + (li_sys + li_sys))%li.
-  Definition pipe_out := (li_sys + li_sys)%li.
-  Variant pipe_internal_state :=
-    | pipe1_read_query (n: int64) (s: pipe_state)
-    | pipe1_read_reply (bytes: list byte) (s: pipe_state)
-    | pipe1_write (bytes: list byte) (s: pipe_state)
-    | pipe2_read (n: int64) (s: pipe_state)
-    | pipe2_write_query (bytes: list byte) (s: pipe_state)
-    | pipe2_write_reply (n: int) (s: pipe_state).
-
-  Inductive pipe_initial_state: query pipe_in -> pipe_internal_state -> Prop :=
-  | pipe_initial_state1 n s:
-    pipe_initial_state (inl (inl (read_query n)), s) (pipe1_read_query n s)
-  | pipe_initial_state2 bytes s:
-    pipe_initial_state (inl (inr (write_query bytes)), s) (pipe1_write bytes s)
-  | pipe_initial_state3 n s:
-    pipe_initial_state (inr (inl (read_query n)), s) (pipe2_read n s)
-  | pipe_initial_state4 bytes s:
-    pipe_initial_state (inr (inr (write_query bytes)), s) (pipe2_write_query bytes s).
-  Inductive pipe_at_external: pipe_internal_state -> query pipe_out -> Prop :=
-  | pipe_at_external1 n s:
-    pipe_at_external (pipe1_read_query n s) (inl (read_query n))
-  | pipe_at_external2 bytes s:
-    pipe_at_external (pipe2_write_query bytes s) (inr (write_query bytes)).
-  Inductive pipe_after_external: pipe_internal_state -> reply pipe_out -> pipe_internal_state -> Prop :=
-  | pipe_after_external1 bytes n s:
-    pipe_after_external (pipe1_read_query n s) (inl (read_reply bytes)) (pipe1_read_reply bytes s)
-  | pipe_after_external2 n bytes s:
-    pipe_after_external (pipe2_write_query bytes s) (inr (write_reply n)) (pipe2_write_reply n s).
-  Inductive pipe_final_state: pipe_internal_state -> reply pipe_in -> Prop :=
-  | pipe_final_state1 bytes s:
-    pipe_final_state (pipe1_read_reply bytes s) ((inl (inl (read_reply bytes))), s)
-  | pipe_final_state2 n bytes s:
-    n = Int.repr (Z.of_nat (length bytes)) ->
-    (* The old buffer is replaced. Otherwise, we'd need "open" or "reset"
-       operation to set the buffer to initial state *)
-    pipe_final_state (pipe1_write bytes s) ((inl (inr (write_reply n)), bytes))
-  | pipe_final_state3 n s:
-    (* read all the buffer if [n] is greater than or equal to the length of the
-       buffer *)
-    Int64.unsigned n >= (Z.of_nat (length s)) ->
-    pipe_final_state (pipe2_read n s) ((inr (inl (read_reply s)), []))
-  | pipe_final_state3' n s bytes bytes':
-    (* read first [n] bytes otherwise *)
-    Int64.unsigned n = (Z.of_nat (length bytes)) ->
-    s = bytes ++ bytes' ->
-    pipe_final_state (pipe2_read n s) ((inr (inl (read_reply bytes)), bytes'))
-  | pipe_final_state4 n s:
-    pipe_final_state (pipe2_write_reply n s) ((inr (inr (write_reply n)), s)).
-
-  Definition pipe_operator: semantics pipe_out pipe_in :=
-    {|
-      activate se :=
-        {|
-          Smallstep.step _ _ _ _ := False;
-          Smallstep.initial_state := pipe_initial_state;
-          Smallstep.at_external := pipe_at_external;
-          Smallstep.after_external := pipe_after_external;
-          Smallstep.final_state := pipe_final_state;
-          Smallstep.globalenv := tt;
-        |};
-      skel := empty_skel;
-      footprint i := False;
-    |}.
-
-  Definition encap_pipe_operator: pipe_out +-> encap_pipe_in :=
-    {|
-      pstate := pipe_state;
-      esem := pipe_operator;
-    |}.
-
-End PIPE.
-
 Definition hello_skel: AST.program unit unit. Admitted.
-
-Definition pipe (L1 L2: semantics (li_sys + li_sys) li_wp) sk: (li_sys + li_sys) +-> li_wp :=
-  comp_esem'
-    (semantics_embed (comp_semantics' seq (with_semantics L1 L2) sk))
-    encap_pipe_operator sk.
 
 Section HELLO_SPEC.
 
@@ -1350,7 +1232,7 @@ Section HELLO_SPEC.
           Smallstep.globalenv := tt;
         |};
       skel := hello_skel;
-      footprint i := False;
+      footprint i := footprint_of_program secret_program i \/ footprint_of_program rot13_program i;
     |}.
   Definition encap_hello_spec: li_sys + li_sys +-> li_wp := semantics_embed hello_spec.
 
@@ -1359,26 +1241,26 @@ End HELLO_SPEC.
 Section PIPE_CORRECT.
 
   Notation L1 :=
-        (TensorComp.semantics_map (comp_semantics' seq (with_semantics secret_spec rot13_spec) hello_skel)
+        (TensorComp.semantics_map (comp_semantics' seq (with_semantics secret_spec rot13_spec hello_skel) hello_skel)
            TensorComp.lf (TensorComp.li_iso_inv TensorComp.li_iso_unit) @ pipe_state)%lts.
 
   Inductive pipe_match_state: hello_state -> Smallstep.state (pipe secret_spec rot13_spec hello_skel) -> Prop :=
   | pipe_match_state1 buf:
     pipe_match_state hello1
-      (st1 L1 pipe_operator (st1 seq (with_semantics secret_spec rot13_spec) seq1, buf))
+      (st1 L1 pipe_operator (st1 seq (with_semantics secret_spec rot13_spec hello_skel) seq1, buf))
   | pipe_match_state2 buf:
     pipe_match_state hello2
       (st2 L1 pipe_operator
-         (st2 seq (with_semantics secret_spec rot13_spec) seq2 (inr (rot13_write tqaax_bytes)), buf)
+         (st2 seq (with_semantics secret_spec rot13_spec hello_skel) seq2 (inr (rot13_write tqaax_bytes)), buf)
          (pipe2_write_query tqaax_bytes []))
   | pipe_match_state3 buf n:
     pipe_match_state hello3
       (st2 L1 pipe_operator
-         (st2 seq (with_semantics secret_spec rot13_spec) seq2 (inr (rot13_write tqaax_bytes)), buf)
+         (st2 seq (with_semantics secret_spec rot13_spec hello_skel) seq2 (inr (rot13_write tqaax_bytes)), buf)
          (pipe2_write_reply n []))
   | pipe_match_state4:
     pipe_match_state hello4
-      (st1 L1 pipe_operator (st1 seq (with_semantics secret_spec rot13_spec) (ret Int.zero), [])).
+      (st1 L1 pipe_operator (st1 seq (with_semantics secret_spec rot13_spec hello_skel) (ret Int.zero), [])).
 
   Local Opaque app.
 
@@ -1405,13 +1287,13 @@ Section PIPE_CORRECT.
       * exists tt, tt. repeat split; eauto.
         destruct H3 as (r' & Hr1 & Hr2). unfold id in Hr1. subst. inv Hr2.
         exists (st2 L1 pipe_operator
-             (st2 seq (with_semantics secret_spec rot13_spec) seq2 (inr (rot13_write tqaax_bytes)), buf)
+             (st2 seq (with_semantics secret_spec rot13_spec hello_skel) seq2 (inr (rot13_write tqaax_bytes)), buf)
              (pipe2_write_reply n [])). split.
         -- exists (inr (write_reply n)). split; eauto. repeat constructor.
         -- exists tt, (tt, (tt, (tt, buf))). split; repeat constructor.
     - intros. cbn in *. eprod_crush. exists tt. inv H2; inv H3.
       * eexists (st2 L1 pipe_operator
-                   (st2 seq (with_semantics secret_spec rot13_spec) seq2 (inr (rot13_write tqaax_bytes)), [])
+                   (st2 seq (with_semantics secret_spec rot13_spec hello_skel) seq2 (inr (rot13_write tqaax_bytes)), [])
                    (pipe2_write_query tqaax_bytes [])).
         split.
         -- left. eapply plus_left. (* seq calls secret *)
@@ -1480,7 +1362,7 @@ Section PIPE_CORRECT.
              instantiate (1 := (_, _)). repeat constructor. constructor. }
            apply star_refl.
         -- exists tt, (tt, (tt, (tt, buf))). split; repeat constructor.
-      * exists (st1 L1 pipe_operator (st1 seq (with_semantics secret_spec rot13_spec) (ret Int.zero), [])).
+      * exists (st1 L1 pipe_operator (st1 seq (with_semantics secret_spec rot13_spec hello_skel) (ret Int.zero), [])).
         split.
         -- left. eapply plus_left. (* pipe returns to rot13 *)
            { eapply step_pop. repeat constructor.
@@ -1500,21 +1382,56 @@ Section PIPE_CORRECT.
 
 End PIPE_CORRECT.
 
-  (* Instance pipe_state_world: World pipe_state := *)
-  (*   {| *)
-  (*     w_state := list byte; *)
-  (*     w_lens := lens_id; *)
-  (*     w_int_step := {| rel s t := True |}; *)
-  (*     w_ext_step := {| rel := eq |}; *)
-  (*   |}. *)
+Require Import Compiler.
+Require Import CallconvAlgebra.
 
-  (* Program Definition empty_buf_callconv : ST.callconv li_wp li_wp := *)
-  (*   {| *)
-  (*     ST.ccworld := pipe_state; *)
-  (*     ST.match_senv _ := eq; *)
-  (*     ST.match_query buf q1 q2 := buf = [] /\ q1 = q2; *)
-  (*     ST.match_reply _ := eq; *)
-  (*   |}. *)
-  (* Next Obligation. reflexivity. Qed. *)
-  (* Next Obligation. reflexivity. Qed. *)
-  (* Next Obligation. reflexivity. Qed. *)
+Lemma wp_match_senv_refl: forall se, wp_match_senv se se.
+Proof.
+  intros. red.
+  split. intros; reflexivity.
+  split. intros; reflexivity.
+  intros; reflexivity.
+Qed.
+
+Lemma cc_wp_id_ref: @CallconvAlgebra.ccref (with_ li_sys li_sys) _ 1 cc_wp_id.
+Proof.
+  red. intros * Hse Hq. inv Hse. inv Hq.
+  exists tt. split. apply wp_match_senv_refl.
+  repeat apply conj; eauto.
+  all: destruct q2; destruct q; eauto.
+Qed.
+
+Section HELLO.
+  Hypothesis (Hwin64: Archi.win64 = false).
+
+  Lemma secret_fsim': forward_simulation cc_wp_id 1 secret_spec secret_c.
+  Proof.
+    eapply open_fsim_ccref. apply cc_wp_id_ref. reflexivity.
+    apply secret_fsim.
+  Qed.
+  Lemma rot13_fsim': forward_simulation cc_wp_id 1 rot13_spec rot13_c.
+  Proof.
+    eapply open_fsim_ccref. apply cc_wp_id_ref. reflexivity.
+    apply rot13_fsim.
+  Qed.
+  Lemma hello_correct secret_asm rot13_asm:
+    transf_clight_program secret_program = Errors.OK secret_asm ->
+    transf_clight_program rot13_program = Errors.OK rot13_asm ->
+    E.forward_simulation
+    &cc_wp_id &1 encap_hello_spec
+          (pipe (load_asm secret_asm) (load_asm rot13_asm) hello_skel).
+  Proof.
+    intros A B.
+    apply load_c_asm in A; auto. apply load_c_asm in B; eauto.
+    exploit @pipe_fsim. admit. admit.
+    apply A. apply B. intros X.
+    pose proof pipe_spec_correct as Y.
+    pose proof secret_fsim' as A1.
+    pose proof rot13_fsim' as B1.
+    exploit @pipe_fsim. admit. admit.
+    apply A1. apply B1. intros Z.
+    exploit @encap_fsim_vcomp. apply Y. apply Z. intros YZ.
+    exploit @encap_fsim_vcomp. apply YZ. apply X. intros XYZ.
+  Admitted.
+
+End HELLO.

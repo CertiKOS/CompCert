@@ -951,22 +951,28 @@ End FIND_FUNCT.
 
 Obligation Tactic := idtac.
 
+(* The weakest condition that can be used. We can't use se1 = se2 because we
+   can't derive it from [match_senv cc_compcert w se1 se2] *)
+Definition wp_match_senv (se1 se2: Genv.symtbl) :=
+  (forall id, Genv.public_symbol se2 id = Genv.public_symbol se1 id) /\
+    (forall sk, Genv.valid_for sk se1 <-> Genv.valid_for sk se2) /\
+    (forall i, Genv.symbol_address se1 i Ptrofs.zero = Vundef <->
+         Genv.symbol_address se2 i Ptrofs.zero = Vundef).
+
 Program Definition cc_wp_id {li}: callconv li li :=
   {|
     ccworld := unit;
-    match_senv w se1 se2 :=
-      exists w, match_senv cc_compcert w se1 se2;
     match_query w q1 q2 := entry q1 = Vundef /\ entry q2 = Vundef /\ q1 = q2;
+    match_senv w := wp_match_senv;
     match_reply w := eq;
   |}.
+Next Obligation. intros. apply H. Qed.
+Next Obligation. intros. apply H. Qed.
 Next Obligation.
-  intros. cbn -[cc_compcert] in H. destruct H as (wcc & Hw).
-  eapply match_senv_public_preserved; eauto.
+  intros. cbn in *. eprod_crush. subst.
+  rewrite H0. apply H.
 Qed.
-Next Obligation.
-  intros. cbn -[cc_compcert] in H. destruct H as (wcc & Hw).
-  eapply match_senv_valid_for; eauto.
-Qed.
+
 Lemma cklr_find_symbol_none (c: CKLR.cklr) w se1 se2 i:
   match_senv c w se1 se2 ->
   Genv.find_symbol se1 i = None <->
@@ -993,9 +999,13 @@ Proof.
     + apply n. eapply Genv.genv_symb_range; eauto.
 Qed.
 
-Next Obligation.
-  intros. cbn in *. eprod_crush.
-  destruct s6. subst. inv H2. rewrite !H0.
+Lemma cc_compcert_wp_match_senv' se1 se2:
+  (exists w, match_senv cc_compcert w se1 se2) ->
+       (forall i, Genv.symbol_address se1 i Ptrofs.zero = Vundef <->
+               Genv.symbol_address se2 i Ptrofs.zero = Vundef).
+Proof.
+  intros [w Hw] i. cbn in *. eprod_crush.
+  destruct s6. subst. inv H0.
   assert (HX: Genv.find_symbol se1 i = None <-> Genv.find_symbol se2 i = None).
   { assert (Genv.find_symbol se1 i = None <-> Genv.find_symbol s0 i = None).
     { clear - H. revert se1 s0 H. induction x.
@@ -1019,6 +1029,17 @@ Next Obligation.
   exfalso. assert (Some b = None). apply HX. easy. easy.
   Unshelve. cbn. exact tt.
 Qed.
+
+Lemma cc_compcert_wp_match_senv se1 se2:
+  (exists w, match_senv cc_compcert w se1 se2) ->
+  wp_match_senv se1 se2.
+Proof.
+  intros [w Hw]. split; [| split].
+  - eapply match_senv_public_preserved; eauto.
+  - intros. eapply match_senv_valid_for; eauto.
+  - eapply cc_compcert_wp_match_senv'; eauto.
+Qed.
+
 Next Obligation. intros. cbn in *. easy. Qed.
 
 Section SYS_C_ASM.
@@ -1678,18 +1699,22 @@ Section SYS_C_ASM.
               subst v. eauto.
             - constructor; eauto. }
     - intros * HS HE. inv HE; inv HS.
-      + exists tt, (inl (read_query n)). repeat apply conj; try constructor; eauto.
-        * econstructor. eauto.
-        * intros * HR HA. inv HR. inv HA.
-          exists (sys_read_reply bytes b2 ofs2 m2). split; try econstructor; eauto.
-          subst ms. cbn in wB. eprod_crush. destruct c.
-          cbn in *. inv H4. econstructor; eauto.
-      + exists tt, (inr (write_query bytes)). repeat apply conj; try constructor; eauto.
-        * econstructor. eauto.
-        * intros * HR HA. inv HR. inv HA.
-          exists (sys_write_reply n m2). split; try econstructor; eauto.
-          subst ms. cbn in wB. eprod_crush. destruct c.
-          cbn in *. inv H4. econstructor; eauto.
+      + exists tt, (inl (read_query n)).
+        split. constructor.
+        split. constructor; eauto.
+        split. apply cc_compcert_wp_match_senv. eexists; eauto.
+        intros * HR HA. inv HR. inv HA.
+        exists (sys_read_reply bytes b2 ofs2 m2). split; try econstructor; eauto.
+        subst ms. cbn in wB. eprod_crush. destruct c.
+        cbn in *. inv H4. econstructor; eauto.
+      + exists tt, (inr (write_query bytes)).
+        split. constructor.
+        split. constructor; eauto.
+        split. apply cc_compcert_wp_match_senv. eexists; eauto.
+        intros * HR HA. inv HR. inv HA.
+        exists (sys_write_reply n m2). split; try econstructor; eauto.
+        subst ms. cbn in wB. eprod_crush. destruct c.
+        cbn in *. inv H4. econstructor; eauto.
     - easy.
     - easy.
   Qed.

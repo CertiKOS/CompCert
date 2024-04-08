@@ -208,7 +208,7 @@ CLIGHTP=AbRel.v CModule.v ClightP.v ClightPComp.v ClightPLink.v \
   Composition.v Encapsulation.v Example.v Lifting.v PEnv.v SkelLinking.v \
   TensorComp.v
 
-PROCESS=InitMem.v Load.v Process.v With.v
+PROCESS=InitMem.v Load.v Process.v With.v Pipe.v
 
 # All source files
 
