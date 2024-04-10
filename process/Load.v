@@ -427,37 +427,19 @@ Section INIT_ASM.
     |}.
 End INIT_ASM.
 
-Section VA.
-
-  Import ValueDomain ValueAnalysis VAInject.
-
-  Context (se: Genv.symtbl) sk m (Hm: init_mem se sk = Some m).
-  Let bc := bc_of_symtbl se.
-
-  Lemma init_mem_block_classification:
-    genv_match bc se
-    /\ bc_below bc (Mem.nextblock m)
-    /\ bc_nostack bc
-    /\ (forall b id, bc b = BCglob id -> Genv.find_symbol se id = Some b)
-    /\ (forall b, Mem.valid_block m b -> bc b <> BCinvalid).
-  Admitted.
-
-  Lemma init_mem_matches:
-    forall cu, Genv.valid_for (erase_program cu) se -> romatch bc m (romem_for cu).
-  Proof.
-    intros. red. intros * Hb Hid.
-    assert (B: romem_consistent (prog_defmap cu) (romem_for cu))
-      by apply romem_for_consistent.
-  Admitted.
-
-End VA.
-
 Require Import Compiler.
 
 Definition cc_compcert : callconv li_c li_asm :=
   cc_cklrs^{*} @ Invariant.cc_inv Invariant.wt_c @ lessdef_c @ cc_c_asm @ cc_asm VAInject.vainj.
 
 Section INIT_C_ASM.
+
+  Context p tp (Hp: match_prog p tp).
+
+  Hypothesis
+    (Hromatch: forall se m,
+        init_mem se (AST.erase_program p) = Some m ->
+        ValueAnalysis.romatch_all se (VAInject.bc_of_symtbl se) m).
 
   Local Transparent Archi.ptr64.
 
@@ -472,40 +454,39 @@ Section INIT_C_ASM.
     - destruct plt; try easy. inv H. reflexivity.
   Qed.
 
-  Lemma match_prog_skel p tp:
-    match_prog p tp -> erase_program p = erase_program tp.
+  Lemma match_prog_skel: erase_program p = erase_program tp.
   Proof.
     intros. edestruct clight_semantic_preservation as [H1 ?]; eauto.
     destruct H1. destruct X. apply fsim_skel.
   Qed.
 
-  Lemma init_c_asm p tp:
-    match_prog p tp -> forward_simulation cc_compcert 1 (init_c p) (init_asm tp).
+  Lemma init_c_asm:
+    forward_simulation cc_compcert 1 (init_c p) (init_asm tp).
   Proof.
-    intros H. assert (Hsk: erase_program p = erase_program tp).
+    assert (Hsk: erase_program p = erase_program tp).
     eapply match_prog_skel; eauto.
     constructor. econstructor. apply Hsk.
     intros. reflexivity.
-    intros. instantiate (1 := fun _ _ _ => _). cbn beta. destruct H0.
+    intros. instantiate (1 := fun _ _ _ => _). cbn beta. destruct H.
     eapply forward_simulation_step with (match_states := eq).
-    - intros. inv H0. inv H2.
+    - intros. inv H1. inv H.
       eexists; split; eauto. constructor.
-    - intros. inv H2. exists r1. split; constructor.
-    - intros. inv H2.
+    - intros. inv H1. exists r1. split; constructor.
+    - intros. inv H1.
       eexists _, (_, m).
       repeat apply conj.
       + assert (exists tf, (prog_defmap tp) ! main = Some (Gfun tf)) as (tf & Htf).
         { assert ((prog_defmap (erase_program p)) ! main = Some (Gfun tt)).
-          rewrite erase_program_defmap. unfold option_map. rewrite H7. reflexivity.
-          rewrite Hsk in H0. rewrite erase_program_defmap in H0.
-          unfold option_map in H0.
-          destruct (prog_defmap tp) ! main as [[tf|]|] eqn: Htf; inv H0.
+          rewrite erase_program_defmap. unfold option_map. rewrite H6. reflexivity.
+          rewrite Hsk in H. rewrite erase_program_defmap in H.
+          unfold option_map in H.
+          destruct (prog_defmap tp) ! main as [[tf|]|] eqn: Htf; inv H.
           exists tf. split; eauto. }
         econstructor; eauto.
         * rewrite <- Hsk. eauto.
         * replace (AST.prog_main tp) with (AST.prog_main (erase_program tp))
             by reflexivity.
-          rewrite <- Hsk. apply H6.
+          rewrite <- Hsk. apply H5.
       + unfold cc_compcert.
         (* cklr *)
         instantiate (1 := (se1, existT _ 0%nat _, _)).
@@ -534,7 +515,7 @@ Section INIT_C_ASM.
           - repeat constructor. red. unfold size_arguments.
             cbn. destruct Archi.win64; reflexivity.
           - erewrite init_mem_nextblock; eauto.
-            apply Genv.invert_find_symbol in H4.
+            apply Genv.invert_find_symbol in H3.
             exploit @Genv.genv_symb_range; eauto.
           - easy.
           - easy. }
@@ -552,20 +533,20 @@ Section INIT_C_ASM.
           destruct i; eauto; cbn.
         * constructor; cbn.
           -- erewrite init_mem_nextblock; eauto. reflexivity.
-          -- intros x Hx. eapply init_mem_matches; eauto.
+          -- eapply Hromatch. eauto.
           -- constructor. eapply initmem_inject; eauto.
       + cbn. repeat apply conj; eauto. constructor. eauto.
         constructor; cbn; erewrite init_mem_nextblock; eauto; try easy.
         apply match_stbls_flat_inj.
-      + intros. inv H2. exists (Some i). split; eauto.
-        cbn in H0.
-        destruct H0 as (r3 & Hr3 & HR). inv Hr3.
+      + intros. inv H1. exists (Some i). split; eauto.
+        cbn in H.
+        destruct H as (r3 & Hr3 & HR). inv Hr3.
         destruct HR as (r3 & Hr3 & HR). inv Hr3.
-        destruct HR as (r3 & Hr3 & HR). inv Hr3. inv H9.
+        destruct HR as (r3 & Hr3 & HR). inv Hr3. inv H8.
         destruct HR as (r3 & Hr3 & HR). inv Hr3. cbn in *.
         destruct HR as ((? & ?) & ? & Hr). destruct r2.
-        inv Hr. specialize (H5 RAX). rewrite <- H11 in H5.
-        cbn in H5. inv H5.
+        inv Hr. specialize (H4 RAX). rewrite <- H10 in H4.
+        cbn in H4. inv H4.
         constructor. easy.
     - easy.
     - easy.
@@ -1748,20 +1729,26 @@ Section REFINE.
     do 2 rewrite cc_compose_assoc. reflexivity.
   Qed.
 
-  Lemma load_c_asm (p: Clight.program) tp:
-    transf_clight_program p = Errors.OK tp ->
+  Context p tp (Hp: transf_clight_program p = Errors.OK tp).
+
+  Hypothesis
+    (Hromatch: forall se m,
+        init_mem se (AST.erase_program p) = Some m ->
+        ValueAnalysis.romatch_all se (VAInject.bc_of_symtbl se) m).
+
+  Lemma load_c_asm:
     forward_simulation cc_wp_id 1 (load_c p) (load_asm tp).
   Proof.
-    intros H. apply transf_clight_program_match in H.
+    apply transf_clight_program_match in Hp.
     exploit sys_c_asm; eauto. intros Hsys.
     exploit init_c_asm; eauto. intros Hinit.
     unfold load_c, load_asm.
-    exploit match_prog_skel. apply H. intros Hsk. rewrite <- Hsk.
+    exploit match_prog_skel. apply Hp. intros Hsk. rewrite <- Hsk.
     eapply categorical_compose_simulation'; eauto.
     2,3: apply Linking.linkorder_refl.
     eapply categorical_compose_simulation'; eauto.
     2,3: apply Linking.linkorder_refl.
-    exploit clight_semantic_preservation. apply H. intros [Hx _].
+    exploit clight_semantic_preservation. apply Hp. intros [Hx _].
     eapply open_fsim_ccref; eauto.
     1,2: apply cc_compcert_eqv.
   Qed.

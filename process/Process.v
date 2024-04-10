@@ -1213,8 +1213,6 @@ Section ROT13_FSIM.
 
 End ROT13_FSIM.
 
-Definition hello_skel: AST.program unit unit. Admitted.
-
 Section HELLO_SPEC.
 
   (* The redundant internal step makes the simulation easier. *)
@@ -1235,6 +1233,7 @@ Section HELLO_SPEC.
   | hello_spec_step1: hello_spec_step hello1 E0 hello2
   | hello_spec_step2: hello_spec_step hello3 E0 hello4.
 
+  Context (hello_skel: AST.program unit unit).
   Definition hello_spec: semantics (li_sys + li_sys) li_wp :=
     {|
       activate se :=
@@ -1254,6 +1253,8 @@ Section HELLO_SPEC.
 End HELLO_SPEC.
 
 Section PIPE_CORRECT.
+
+  Context (hello_skel: AST.program unit unit).
 
   Notation L1 :=
         (TensorComp.semantics_map (comp_semantics' seq (with_semantics secret_spec rot13_spec hello_skel) hello_skel)
@@ -1279,7 +1280,8 @@ Section PIPE_CORRECT.
 
   Local Opaque app.
 
-  Lemma pipe_spec_correct: E.forward_simulation &1 &1 encap_hello_spec (pipe secret_spec rot13_spec hello_skel).
+  Lemma pipe_spec_correct: E.forward_simulation
+                           &1 &1 (encap_hello_spec hello_skel) (pipe secret_spec rot13_spec hello_skel).
   Proof.
     apply st_normalize_fsim. constructor.
     eapply ST.Forward_simulation with
@@ -1426,7 +1428,62 @@ Proof.
   all: destruct q2; destruct q; eauto.
 Qed.
 
+(* TODO: move this lemma to Encapsulation.v *)
+Instance st_cc_compose_ref li1 li2 li3:
+  Proper (st_ccref ++> st_ccref ++> st_ccref) (@ST.cc_compose li1 li2 li3).
+Proof.
+    intros cc12 cc12' H12 cc23 cc23' H23. unfold st_ccref.
+    exploit @st_fsim_vcomp. apply H12. apply H23. intros HX. apply HX.
+Qed.
+
+Section CCREF.
+
+  Lemma cc_wp_id_ref_idemp:
+    st_ccref (ST.cc_compose & (cc_wp_id) & (cc_wp_id))
+      &(@cc_wp_id (with_ li_sys li_sys)).
+  Proof.
+    unfold st_ccref. apply st_normalize_fsim. constructor.
+    eapply ST.Forward_simulation with
+      (ltof _ (fun (_: unit) => 0%nat))
+      (fun se1 se2 w0 _ w2 _ => eq)
+      (fun _ _ => True); try easy.
+    intros. cbn in *. eprod_crush.
+    constructor; cbn; intros; eprod_crush; try easy.
+    - inv H5. eexists tt, _. split. constructor.
+      eexists tt, (tt, tt). repeat split; eauto.
+    - inv H4. exists r1. split. econstructor.
+      exists (tt, tt). repeat split; eauto.
+    - inv H4. exists q1. split. econstructor.
+      exists tt, tt. split; eauto. split; eauto. split.
+      destruct q1; eauto.
+      split.
+      { destruct H as [A [B C]].
+        destruct H2 as [A' [B' C']].
+        repeat apply conj.
+        - intros. congruence.
+        - intros. rewrite B. easy.
+        - intros. rewrite C. easy. }
+      intros. inv H5. eexists tt, _.
+      split. constructor.
+      exists tt, (tt, tt). repeat split; eauto.
+  Qed.
+
+End CCREF.
+
 Section HELLO.
+  Context (hello_skel: AST.program unit unit).
+  Hypothesis (Hskel1: Linking.linkorder (AST.erase_program secret_program) hello_skel).
+  Hypothesis (Hskel2: Linking.linkorder (AST.erase_program rot13_program) hello_skel).
+
+  Lemma Hskel1': Linking.linkorder (skel (load_c secret_program)) hello_skel.
+  Proof. apply Hskel1. Qed.
+  Lemma Hskel2': Linking.linkorder (skel (load_c rot13_program)) hello_skel.
+  Proof. apply Hskel2. Qed.
+  Lemma Hskel1'': Linking.linkorder (skel secret_spec) hello_skel.
+  Proof. apply Hskel1. Qed.
+  Lemma Hskel2'': Linking.linkorder (skel rot13_spec) hello_skel.
+  Proof. apply Hskel2. Qed.
+
   Hypothesis (Hwin64: Archi.win64 = false).
 
   Lemma secret_fsim': forward_simulation cc_wp_id 1 secret_spec secret_c.
@@ -1439,24 +1496,37 @@ Section HELLO.
     eapply open_fsim_ccref. apply cc_wp_id_ref. reflexivity.
     apply rot13_fsim.
   Qed.
+
+  Hypothesis
+    (Hromatch1: forall (se : Genv.symtbl) (m : mem),
+        init_mem se (erase_program secret_program) = Some m ->
+        ValueAnalysis.romatch_all se (VAInject.bc_of_symtbl se) m).
+  Hypothesis
+    (Hromatch2: forall (se : Genv.symtbl) (m : mem),
+        init_mem se (erase_program rot13_program) = Some m ->
+        ValueAnalysis.romatch_all se (VAInject.bc_of_symtbl se) m).
+
   Lemma hello_correct secret_asm rot13_asm:
     transf_clight_program secret_program = Errors.OK secret_asm ->
     transf_clight_program rot13_program = Errors.OK rot13_asm ->
     E.forward_simulation
-    &cc_wp_id &1 encap_hello_spec
+    &cc_wp_id &1 (encap_hello_spec hello_skel)
           (pipe (load_asm secret_asm) (load_asm rot13_asm) hello_skel).
   Proof.
     intros A B.
     apply load_c_asm in A; auto. apply load_c_asm in B; eauto.
-    exploit @pipe_fsim. admit. admit.
+    exploit @pipe_fsim. apply Hskel1'. apply Hskel2'.
     apply A. apply B. intros X.
     pose proof pipe_spec_correct as Y.
     pose proof secret_fsim' as A1.
     pose proof rot13_fsim' as B1.
-    exploit @pipe_fsim. admit. admit.
+    exploit @pipe_fsim. apply Hskel1''. apply Hskel2''.
     apply A1. apply B1. intros Z.
     exploit @encap_fsim_vcomp. apply Y. apply Z. intros YZ.
     exploit @encap_fsim_vcomp. apply YZ. apply X. intros XYZ.
-  Admitted.
+    do 2 rewrite <- ccref_right_unit1 in XYZ.
+    rewrite ccref_left_unit2 in XYZ.
+    rewrite cc_wp_id_ref_idemp in XYZ. apply XYZ.
+  Qed.
 
 End HELLO.
