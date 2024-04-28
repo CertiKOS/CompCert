@@ -93,17 +93,20 @@ Section SECRET_SPEC.
       secret_spec_at_external (secret4, m)
         (cq (Vptr b1 Ptrofs.zero) sg [ Vint (Int.repr 1); Vptr b2 Ptrofs.zero; Vlong (Int64.repr 5) ] m).
     Inductive secret_spec_after_external: secret_state * mem -> reply li_c -> secret_state * mem -> Prop :=
-    | secret_spec_after_external_intro1 m m' v
-        (HM: Ple (Mem.nextblock m) (Mem.nextblock m')):
+    | secret_spec_after_external_intro1 m m' v b
+        (HB: Genv.find_symbol se secret_msg_id = Some b)
+        (* rot13 doesn't change the memory state other than the message buffer *)
+        (HM: Mem.unchanged_on (fun bx _ => bx <> b) m m'):
         secret_spec_after_external (secret2, m) (cr v m') (secret3, m')
-    | secret_spec_after_external_intro2 m m' v
-        (HM: Ple (Mem.nextblock m) (Mem.nextblock m')):
-        secret_spec_after_external (secret4, m) (cr v m') (secret5, m').
+    | secret_spec_after_external_intro2 m v:
+        (* write is not supposed to change the memory *)
+        secret_spec_after_external (secret4, m) (cr v m) (secret5, m).
     Inductive secret_spec_final_state: secret_state * mem -> reply li_c -> Prop :=
     | secret_spec_final_state_intro m:
         secret_spec_final_state (secret6, m) (cr (Vint Int.zero) m).
     Inductive secret_step : secret_state * mem -> trace -> secret_state * mem -> Prop :=
-    | secret_step1 m: secret_step (secret1, m) E0 (secret2, m)
+    | secret_step1 m m' (HALLOC: Mem.alloc m 0 16 = Some m'):
+      secret_step (secret1, m) E0 (secret2, m)
     | secret_step2 m: secret_step (secret3, m) E0 (secret4, m)
     | secret_step3 m: secret_step (secret5, m) E0 (secret6, m).
 
@@ -116,7 +119,7 @@ Section SECRET_SPEC.
           Smallstep.step _ := secret_step;
           Smallstep.initial_state := secret_spec_initial_state se;
           Smallstep.at_external := secret_spec_at_external se;
-          Smallstep.after_external := secret_spec_after_external;
+          Smallstep.after_external := secret_spec_after_external se;
           Smallstep.final_state := secret_spec_final_state;
           Smallstep.globalenv := tt;
         |};
@@ -126,6 +129,7 @@ Section SECRET_SPEC.
 
 End SECRET_SPEC.
 
+Require Import InjectFootprint.
 
 Section CODE_PROOF.
 
@@ -148,51 +152,128 @@ Section CODE_PROOF.
   Import Asm.
   Require Import Lifting.       (* eprod_crush *)
 
-  Inductive secret_match_state se: secret_state * mem -> block * Asm.state -> Prop :=
-  | secret_match_state1 m rs nb b
+  Search Mem.inject Mem.unchanged_on.
+
+  Inductive secret_match_state: ccworld (cc_c injp @ cc_c_asm) -> secret_state * mem -> block * Asm.state -> Prop :=
+  | secret_match_state1 rs nb b sg j m1 m2 Hm se
       (HPC: rs PC = Vptr b Ptrofs.zero)
       (HB: Genv.find_symbol se secret_main_id = Some b)
-      (HSP: Mach.valid_blockv (Mem.nextblock m) (rs RSP))
-      (HNB: nb = Mem.nextblock m):
-    secret_match_state se (secret1, m) (nb, State rs m true)
-  | secret_match_state2 m rs nb b1 b2 b3 sp ra
-      (HPC: rs PC = Vptr b1 Ptrofs.zero)
+      (HSP: Mach.valid_blockv (Mem.nextblock m2) (rs RSP))
+      (HNB: nb = Mem.nextblock m2):
+    secret_match_state (se, injpw j m1 m2 Hm, caw sg rs m2)
+      (secret1, m1) (nb, State rs m2 true)
+  | secret_match_state2 rs nb se b1 b2 b3 sp ra sg wi m1 m2 j Hm mx1 mx2 Hmx sp_b rs0
+      (HWI: wi = injpw j m1 m2 Hm)
+      (HACC: injp_acc wi (injpw j mx1 mx2 Hmx))
       (HB1: Genv.find_symbol se secret_rot13_id = Some b1)
-      (HRA: rs RA = Vptr b2 (Ptrofs.repr 3))
       (HB2: Genv.find_symbol se secret_main_id = Some b2)
-      (HRSI: rs (IR RSI) = Vlong (Int64.repr 5))
       (HB3: Genv.find_symbol se secret_msg_id = Some b3)
+      (HPC: rs PC = Vptr b1 Ptrofs.zero)
+      (HRA: rs RA = Vptr b2 (Ptrofs.repr 3))
+      (HRSI: rs (IR RSI) = Vlong (Int64.repr 5))
       (HRDI: rs (IR RDI) = Vptr b3 Ptrofs.zero)
-      (HLSP: Mem.loadv Mptr m (Val.offset_ptr rs#RSP (Ptrofs.repr 0)) = Some sp)
-      (HLRA: Mem.loadv Mptr m (Val.offset_ptr rs#RSP (Ptrofs.repr 8)) = Some ra)
+      (HLSP: Mem.loadv Mptr mx2 (Val.offset_ptr rs#RSP (Ptrofs.repr 0)) = Some sp)
+      (HLRA: Mem.loadv Mptr mx2 (Val.offset_ptr rs#RSP (Ptrofs.repr 8)) = Some ra)
+      (HCALLEE: forall r, Conventions1.is_callee_save r = true -> rs (preg_of r) = rs0 (preg_of r))
       (HSP: Mach.valid_blockv nb sp)
-      (HSP': Mach.valid_blockv (Mem.nextblock m) rs#RSP)
-      (HLIVE: inner_sp nb rs#RSP = Some true):
-    secret_match_state se (secret2, m) (nb, State rs m true)
-  | secret_match_state3 m mt rs nb b sp ra
+      (HSPB1: Plt sp_b (Mem.nextblock mx2))
+      (HSPB2: ~ Plt sp_b nb)
+      (HSPB: rs#RSP = Vptr sp_b Ptrofs.zero)
+      (HSPB3: forall b d, j b = Some (sp_b, d) -> False)
+      (* (HOUT: forall ofs, loc_out_of_reach j m1 sp_b ofs) *)
+      (HFREE: Mem.range_perm mx2 sp_b 0 16 Cur Freeable) :
+    secret_match_state (se, wi, caw sg rs0 m2)
+      (secret2, mx1) (nb, State rs mx2 true)
+  | secret_match_state3  rs nb se sp ra sg wi m1 m2 j Hm mx1 mx2 mx3 jx Hmx sp_b rs0 b
+      (HWI: wi = injpw j m1 m2 Hm)
+      (HACC: injp_acc wi (injpw jx mx1 mx2 Hmx))
       (HPC: rs PC = Vptr b (Ptrofs.repr 3))
       (HB: Genv.find_symbol se secret_main_id = Some b)
       (HSP: Mach.valid_blockv nb sp)
-      (HSP': Mach.valid_blockv (Mem.nextblock m) rs#RSP)
-      (HLIVE: inner_sp nb rs#RSP = Some true)
-      (HLSP: Mem.loadv Mptr mt (Val.offset_ptr rs#RSP (Ptrofs.repr 0)) = Some sp)
-      (HLRA: Mem.loadv Mptr mt (Val.offset_ptr rs#RSP (Ptrofs.repr 8)) = Some ra)
-      (HMT: Mem.unchanged_on (fun b ofs => True) m mt):
-    secret_match_state se (secret3, m) (nb, State rs mt true)
-  | secret_match_state4 m mt rs nb b1 b2 b3 sp ra
-      (HPC: rs PC = Vptr b1 Ptrofs.zero)
+      (HLSP: Mem.loadv Mptr mx3 (Val.offset_ptr rs#RSP (Ptrofs.repr 0)) = Some sp)
+      (HLRA: Mem.loadv Mptr mx3 (Val.offset_ptr rs#RSP (Ptrofs.repr 8)) = Some ra)
+      (HCALLEE: forall r, Conventions1.is_callee_save r = true -> rs (preg_of r) = rs0 (preg_of r))
+      (HM0: Mem.unchanged_on (fun b ofs => True) mx2 mx3)
+      (HNEXTBLOCK: Mem.nextblock mx2 = Mem.nextblock mx3)
+      (HSPB: rs#RSP = Vptr sp_b Ptrofs.zero)
+      (HSPB1: Plt sp_b (Mem.nextblock mx2))
+      (HSPB2: ~ Plt sp_b nb)
+      (HSPB: rs#RSP = Vptr sp_b Ptrofs.zero)
+      (HSPB3: forall b d, jx b = Some (sp_b, d) -> False)
+      (* (HOUT: forall ofs, loc_out_of_reach j m1 sp_b ofs) *)
+      (HFREE: Mem.range_perm mx2 sp_b 0 16 Cur Freeable)  :
+    secret_match_state  (se, wi, caw sg rs0 m2)
+      (secret3, mx1) (nb, State rs mx3 true)
+  | secret_match_state4 rs nb se b1 b2 b3 sp ra sg wi m1 m2 j jx Hm mx1 mx2 mx3 Hmx sp_b rs0
+      (HWI: wi = injpw j m1 m2 Hm)
+      (HACC: injp_acc wi (injpw jx mx1 mx2 Hmx))
       (HB1: Genv.find_symbol se secret_write_id = Some b1)
-      (HRA: rs RA = Vptr b2 (Ptrofs.repr 7))
       (HB2: Genv.find_symbol se secret_main_id = Some b2)
-      (HRDX: rs (IR RDX) = Vlong (Int64.repr 5))
       (HB3: Genv.find_symbol se secret_msg_id = Some b3)
+      (HPC: rs PC = Vptr b1 Ptrofs.zero)
+      (HRA: rs RA = Vptr b2 (Ptrofs.repr 7))
+      (HRDX: rs (IR RDX) = Vlong (Int64.repr 5))
       (HRSI: rs (IR RSI) = Vptr b3 Ptrofs.zero)
       (HRDI: rs (IR RDI) = Vint (Int.repr 1))
+      (HLSP: Mem.loadv Mptr mx2 (Val.offset_ptr rs#RSP (Ptrofs.repr 0)) = Some sp)
+      (HLRA: Mem.loadv Mptr mx2 (Val.offset_ptr rs#RSP (Ptrofs.repr 8)) = Some ra)
+      (HM0: Mem.unchanged_on (fun b ofs => True) mx2 mx3)
+      (HNEXTBLOCK: Mem.nextblock mx2 = Mem.nextblock mx3)
+      (HCALLEE: forall r, Conventions1.is_callee_save r = true -> rs (preg_of r) = rs0 (preg_of r))
       (HSP: Mach.valid_blockv nb sp)
-      (HLSP: Mem.loadv Mptr mt (Val.offset_ptr rs#RSP (Ptrofs.repr 0)) = Some sp)
-      (HLRA: Mem.loadv Mptr mt (Val.offset_ptr rs#RSP (Ptrofs.repr 8)) = Some ra)
-      (HMT: Mem.unchanged_on (fun b ofs => True) m mt):
-    secret_match_state se (secret4, m) (nb, State rs mt true).
+      (HSPB1: Plt sp_b (Mem.nextblock mx2))
+      (HSPB2: ~ Plt sp_b nb)
+      (HSPB: rs#RSP = Vptr sp_b Ptrofs.zero)
+      (HSPB3: forall b d, jx b = Some (sp_b, d) -> False)
+      (* (HOUT: forall ofs, loc_out_of_reach j m1 sp_b ofs) *)
+      (HFREE: Mem.range_perm mx2 sp_b 0 16 Cur Freeable) :
+    secret_match_state (se, wi, caw sg rs0 m2)
+      (secret4, mx1) (nb, State rs mx3 true)
+
+  (* | secret_match_state4 m mt rs nb b1 b2 b3 sp ra rs0 m0 sg sp_b *)
+  (*     (HPC: rs PC = Vptr b1 Ptrofs.zero) *)
+  (*     (HB1: Genv.find_symbol se secret_write_id = Some b1) *)
+  (*     (HRA: rs RA = Vptr b2 (Ptrofs.repr 7)) *)
+  (*     (HB2: Genv.find_symbol se secret_main_id = Some b2) *)
+  (*     (HRDX: rs (IR RDX) = Vlong (Int64.repr 5)) *)
+  (*     (HB3: Genv.find_symbol se secret_msg_id = Some b3) *)
+  (*     (HRSI: rs (IR RSI) = Vptr b3 Ptrofs.zero) *)
+  (*     (HRDI: rs (IR RDI) = Vint (Int.repr 1)) *)
+  (*     (HSP: Mach.valid_blockv nb sp) *)
+  (*     (HLSP: Mem.loadv Mptr mt (Val.offset_ptr rs#RSP (Ptrofs.repr 0)) = Some sp) *)
+  (*     (HLRA: Mem.loadv Mptr mt (Val.offset_ptr rs#RSP (Ptrofs.repr 8)) = Some ra) *)
+  (*     (HMT: Mem.unchanged_on (fun b ofs => True) m mt) *)
+  (*     (HM0: Mem.unchanged_on (fun b ofs => False) m0 mt) *)
+  (*     (HNEXTBLOCK: Mem.nextblock m = Mem.nextblock mt) *)
+  (*     (HSPB: rs#RSP = Vptr sp_b Ptrofs.zero) *)
+  (*     (HFREE: Mem.range_perm mt sp_b 0 16 Cur Freeable) : *)
+  (*   secret_match_state se (caw sg rs0 m0) (secret4, m) (nb, State rs mt true) *)
+  (* | secret_match_state5 m mt rs nb b sp ra rs0 m0 sg sp_b *)
+  (*     (HPC: rs PC = Vptr b (Ptrofs.repr 7)) *)
+  (*     (HB: Genv.find_symbol se secret_main_id = Some b) *)
+  (*     (HSP: Mach.valid_blockv nb sp) *)
+  (*     (HSP': Mach.valid_blockv (Mem.nextblock m) rs#RSP) *)
+  (*     (HLIVE: inner_sp nb rs#RSP = Some true) *)
+  (*     (HLSP: Mem.loadv Mptr mt (Val.offset_ptr rs#RSP (Ptrofs.repr 0)) = Some sp) *)
+  (*     (HLRA: Mem.loadv Mptr mt (Val.offset_ptr rs#RSP (Ptrofs.repr 8)) = Some ra) *)
+  (*     (HMT: Mem.unchanged_on (fun b ofs => True) m mt) *)
+  (*     (HM0: Mem.unchanged_on (fun b ofs => False) m0 mt) *)
+  (*     (HNEXTBLOCK: Mem.nextblock m = Mem.nextblock mt) *)
+  (*     (HSPB: rs#RSP = Vptr sp_b Ptrofs.zero) *)
+  (*     (HFREE: Mem.range_perm mt sp_b 0 16 Cur Freeable) : *)
+  (*   secret_match_state se (caw sg rs0 m0) (secret5, m) (nb, State rs mt true) *)
+  | secret_match_state6 rs mx1 mx2 mx3 m1 m2 j Hm jx Hmx wi nb rs0 sg se
+      (HACC:injp_acc wi (injpw jx mx1 mx2 Hmx))
+      (HWI: wi = injpw j m1 m2 Hm)
+      (HRAX: rs (IR RAX) = Vint Int.zero)
+      (HCALLEE: forall r, Conventions1.is_callee_save r = true -> rs (preg_of r) = rs0 (preg_of r))
+      (HSG: sg = signature_main)
+      (HMT: Mem.unchanged_on (fun b ofs => True) mx2 mx3)
+      (HNEXTBLOCK: Mem.nextblock mx2 = Mem.nextblock mx3)
+      (HPC: rs PC = rs0 RA)
+      (HSP: rs RSP = rs0 RSP):
+      secret_match_state  (se, wi, caw sg rs0 m2)
+        (secret6, mx1) (nb, State rs mx3 false).
 
   Transparent Archi.ptr64.
   Hypothesis (Hwin64: Archi.win64 = false).
@@ -238,6 +319,7 @@ Section CODE_PROOF.
   Ltac rewrite_pc :=
     match goal with
     | [ H: (_ PC) = _ |- _ ] => rewrite H
+    | [ H: _ = (_ PC) |- _ ] => rewrite <- H
     end.
   Ltac asm_step :=
     instantiate (1 := (_, _)); split; eauto; eapply exec_step_internal;
@@ -246,74 +328,200 @@ Section CODE_PROOF.
     | cbn; rewrite zeq_true by easy; repeat rewrite zeq_false by easy; reflexivity
     | ].
 
+  Lemma main_size_arguments:
+    Conventions.size_arguments signature_main = 0.
+  Proof. cbn. rewrite Hwin64. reflexivity. Qed.
+  Lemma rot13_size_arguments:
+    Conventions.size_arguments rot13_sig = 0.
+  Proof. cbn. rewrite Hwin64. reflexivity. Qed.
+  Lemma write_size_arguments:
+    Conventions.size_arguments write_sig = 0.
+  Proof. cbn. rewrite Hwin64. reflexivity. Qed.
+
+  Lemma no_init_args sp:
+    CallConv.not_init_args 0 sp = fun (_: block) (_: Z) => True.
+  Proof.
+    repeat (apply Axioms.functional_extensionality; intros).
+    apply PropExtensionality.propositional_extensionality.
+    split; eauto. intros.
+    red. intros A. inv A. lia.
+  Qed.
+
+  Lemma no_init_args_loc sp:
+    Mach.loc_init_args 0 sp = fun (_: block) (_: Z) => False.
+  Proof.
+    repeat (apply Axioms.functional_extensionality; intros).
+    apply PropExtensionality.propositional_extensionality.
+    split.
+    - intros. inv H. lia.
+    - inversion 1.
+  Qed.
+
+  Lemma match_program_id:
+    Linking.match_program (fun _ f0 tf => tf = id f0) eq secret_asm_program secret_asm_program.
+  Proof.
+    red. red. constructor; eauto.
+    constructor. constructor. eauto. simpl. econstructor; eauto.
+    apply Linking.linkorder_refl.
+    constructor. constructor; eauto. cbn. econstructor; eauto.
+    apply Linking.linkorder_refl.
+    constructor; eauto.
+    constructor; eauto. econstructor; eauto.
+    apply Linking.linkorder_refl.
+    repeat econstructor; eauto.
+  Qed.
+
+  Lemma loadv_unchanged_on : forall P m m' chunk b ptrofs v,
+      Mem.unchanged_on P m m' ->
+      (forall i, let ofs := Ptrofs.unsigned ptrofs in
+            ofs <= i < ofs + size_chunk chunk -> P b i) ->
+      Mem.loadv chunk m (Vptr b ptrofs) = Some v ->
+      Mem.loadv chunk m' (Vptr b ptrofs) = Some v.
+  Proof.
+    intros. unfold Mem.loadv in *. cbn in *.
+    eapply Mem.load_unchanged_on; eauto.
+  Qed.
+
   Lemma secret_correct':
-    forward_simulation
-      (Invariant.cc_inv Invariant.wt_c @ CallConv.lessdef_c @ cc_c_asm)
-      (Invariant.cc_inv Invariant.wt_c @ CallConv.lessdef_c @ cc_c_asm)
-      secret_spec
-      (semantics secret_asm_program).
+    forward_simulation (cc_c injp @ cc_c_asm) (cc_c injp @ cc_c_asm)
+      secret_spec (semantics secret_asm_program).
   Proof.
     constructor. econstructor. reflexivity. reflexivity.
     intros. instantiate (1 := fun _ _ _ => _). cbn beta.
-    assert (se1 = se2) as <-.
-    { cbn in *. eprod_crush. subst. inv H. reflexivity. }
     eapply forward_simulation_plus with
-      (match_states := fun s1 s2 => secret_match_state se1 s1 s2).
-    - intros * Hq Hi. cbn in *. eprod_crush.
-      inv H3. inv H4. inv H5. destruct H6. subst.
-      inv Hi.
-      assert (m0 = m) as ->.
-      { inv HRM; eauto.
-        red in H7. unfold signature_main in H7. cbn in H7.
-        rewrite Hwin64 in H7. easy. }
-      eexists (Mem.nextblock m, Asm.State r m true).
+      (match_states := fun s1 s2 => secret_match_state wB s1 s2).
+    - intros * Hq Hi. cbn in *. destruct wB as [[se winjp] wca].
+      destruct H as [Hse ->]. inv Hse. destruct Hq as (qx & Hq1 & Hq2).
+      inv Hq1. inv Hq2. inv Hi. inv H5.
+      inv HRM. 2: { pose proof main_size_arguments. extlia. }
+      eexists (Mem.nextblock m3, Asm.State rs m3 true).
+      pose proof match_program_id as Hmatch.
+      eapply Genv.find_funct_transf in Hmatch; eauto.
+      2: { inv H3. erewrite find_funct_spec; eauto. reflexivity. }
       cbn in *.
-      split. split; eauto. econstructor.
-      + rewrite <- H4. erewrite find_funct_spec; eauto. reflexivity.
-      + inv HV. easy.
-      + eauto.
-      + econstructor; eauto.
-    - admit.
-    - (* after external *)
+      split. split; eauto. econstructor; eauto. inv HV. congruence.
+      eapply Genv.find_symbol_match in HF as (bf & Hbf1 & Hbf2); eauto.
+      inv H3. rewrite Hbf1 in H10. inv H10. rewrite Ptrofs.add_zero_l in H9.
+      econstructor; eauto.
+    - (* final state *)
+      intros * Hs Hf. inv Hf. inv Hs.
+      exists (rs, mx3). split. constructor.
+      exists (cr (Vint Int.zero) mx2). split.
+      exists (injpw jx m mx2 Hmx). split; eauto.
+      constructor; eauto. constructor; eauto.
+      constructor; eauto with mem.
+      + rewrite main_size_arguments. rewrite no_init_args. eauto.
+      + rewrite main_size_arguments. rewrite no_init_args_loc.
+        inv HACC. split. etransitivity. apply H10. apply HMT.
+        inversion 1. inversion 1. etransitivity. apply H10. apply HMT.
+      + rewrite main_size_arguments. rewrite no_init_args_loc. inversion 1.
+    - (* at external *)
       intros * Hs Ha. inv Ha; inv Hs.
-      + (* after rot13 *)
-        eexists (se1, (se1, rot13_sig), (se1, tt, (caw rot13_sig rs m))).
-        eexists (rs, m).
-        split. 2: split. 3: split.
-        * econstructor. rewrite HPC; eauto.
+      + (* external call rot13 *)
+        eexists (se, injpw j m mx2 Hmx, caw rot13_sig rs mx2), (rs, mx2).
+        destruct H as (Hse1 & Hse2). inv Hse2. inv Hse1.
+        repeat apply conj.
+        * econstructor. rewrite_pc; eauto.
           erewrite find_funct_spec; eauto. reflexivity.
-        * eexists. split. constructor. constructor. reflexivity. easy.
-          eexists. split. constructor. repeat constructor.
-          econstructor; eauto; cbn; try congruence.
-          -- rewrite Hwin64. cbn. congruence.
-          -- inv HSP. eapply CallConv.args_removed_tailcall_possible.
-             red. cbn. rewrite Hwin64. reflexivity.
-          -- inv HSP'. easy.
-          -- rewrite HRA. easy.
-        * cbn. easy.
-        * intros * Hr Ha. destruct s1' as (st1 & mt).
-          destruct Hr as (rx1 & Hr1 & Hr2).
-          destruct Hr2 as (rx2 & Hr2 & Hr3). inv Hr3.
-          inv Ha. cbn in *. rewrite Hwin64 in *. cbn in *.
-          inv Hr1. inv Hr2.
+        (* match_query *)
+        * eexists (cq _ _ _ _). split; econstructor; eauto; cbn; try congruence.
+          (* pc injection *)
+          -- rewrite_pc.
+             eapply Genv.find_symbol_match in HB1 as (bf & Hbf1 & Hbf2); eauto.
+             inv HACC. eapply val_inject_incr; eauto.
+             econstructor. 2: rewrite Ptrofs.add_zero_l; reflexivity. congruence.
+          (* args injection *)
+          -- rewrite Hwin64. cbn. rewrite HRDI. rewrite HRSI. admit.
+          (* match_mem *)
+          -- constructor.
+          (* args_removed *)
+          -- constructor. unfold rot13_sig. red. cbn.
+             rewrite Hwin64. reflexivity.
+          (* rsp has type *)
+          -- rewrite HSPB. constructor.
+          (* rs has type *)
+          -- rewrite HRA. constructor.
+          (* valid_blockv *)
+          -- rewrite HSPB. constructor. apply HSPB1.
+        (* match_senv *)
+        * split. 2: reflexivity. inv HACC. constructor.
+          -- eapply Genv.match_stbls_incr; eauto.
+             intros. specialize (H14 _ _ _ H H1) as (HA & HB).
+             unfold Mem.valid_block in HA, HB. split; extlia.
+          -- etransitivity; eauto. apply H11.
+          -- etransitivity; eauto. apply H12.
+        (* after external *)
+        * intros * Hr Ha. destruct s1' as (st1 & mx).
+          destruct Hr as (rx1 & (wx & Hwx & Hr1) & Hr2).
+          inv Hr1. inv Hr2. inv Ha.
           exists (nb, State rs' tm' true).
           split. split; eauto. econstructor.
-          -- apply H7.
-          -- rewrite H12. eauto.
+          -- apply H13.
+          -- rewrite H17. rewrite HSPB. cbn.
+             destruct plt; eauto. exfalso. apply HSPB2. eauto.
           -- (* match_state *)
-            replace (CallConv.not_init_args 0 sp0)
-               with (fun (_: block) (_: Z) => True) in H6.
-             2: { repeat (apply Axioms.functional_extensionality; intros).
-                  apply PropExtensionality.propositional_extensionality.
-                  split; eauto. intros.
-                  red. intros A. inv A. lia. }
-             econstructor; eauto; try congruence.
-             ++ rewrite H12. inv HSP'. econstructor.
-                eapply Pos.lt_le_trans; eauto.
-             ++ rewrite H12. admit.
+             inv Hwx. inv H1.
+             assert (HFREE1: Mem.range_perm m2' sp_b 0 16 Cur Freeable).
+             {
+               red. intros. red in HFREE. inv H15.
+               eapply unchanged_on_perm; eauto.
+               red. intros. exploit HSPB3; eauto.
+             }
+             eapply secret_match_state3 with (jx := f'); eauto; try congruence.
+             (* acc *)
+             ++ etransitivity; eauto. constructor; eauto.
+             (* load sp *)
+             ++ rewrite H17. rewrite HSPB in HLSP |- *. cbn in HLSP |- *.
+                rewrite Ptrofs.add_zero_l in HLSP |- *.
+                rewrite Ptrofs.unsigned_repr in HLSP |- * by (cbn; lia).
+                eapply Mem.load_unchanged_on. apply H12.
+                intros. rewrite rot13_size_arguments. rewrite no_init_args. easy.
+                eapply Mem.load_unchanged_on; eauto.
+                intros. red. intros. exploit HSPB3; eauto.
+             (* load ra *)
              ++ admit.
-      + (* after write *)
-        admit.
+             (* HCALLEE *)
+             ++ intros. rewrite <- HCALLEE; eauto.
+             ++ rewrite rot13_size_arguments in H12.
+                rewrite no_init_args in H12. easy.
+             (* Plt sp_b nextblock *)
+             ++ eapply Plt_Ple_trans. apply HSPB1. apply H15.
+             ++ intros. destruct (j b5) as [[sb dsb]|] eqn: Hf.
+                ** apply H20 in Hf as Hf'. rewrite H1 in Hf'. inv Hf'. eauto.
+                ** specialize (H21 _ _ _ Hf H1) as [A B]. eauto.
+      + (* external call write *)
+        assert (Hmx3: Mem.inject jx m mx3).
+        { admit.
+        }
+        eexists (se, injpw jx m mx3 Hmx3, caw write_sig rs mx3), (rs, mx3).
+        destruct H as (Hse1 & Hse2). inv Hse2. inv Hse1.
+        repeat apply conj.
+        * econstructor. rewrite_pc; eauto.
+          erewrite find_funct_spec; eauto. reflexivity.
+        (* match_query *)
+        * eexists (cq _ _ _ mx3). split; econstructor; eauto; cbn; try congruence.
+          (* pc injection *)
+          -- rewrite_pc.
+             eapply Genv.find_symbol_match in HB1 as (bf & Hbf1 & Hbf2); eauto.
+             inv HACC. eapply val_inject_incr; eauto.
+             econstructor. 2: rewrite Ptrofs.add_zero_l; reflexivity. congruence.
+          (* args injection *)
+          -- rewrite Hwin64. cbn. rewrite HRDI. rewrite HRSI. admit.
+          (* match_mem *)
+          -- constructor.
+          (* args_removed *)
+          -- constructor. unfold write_sig. red. cbn.
+             rewrite Hwin64. reflexivity.
+          (* rsp has type *)
+          -- rewrite HSPB. constructor.
+          (* rs has type *)
+          -- rewrite HRA. constructor.
+          (* valid_blockv *)
+          -- rewrite HSPB. constructor. rewrite <- HNEXTBLOCK. apply HSPB1.
+        (* match_senv *)
+        * admit.
+        (* after external *)
+        * admit.
     - (* internal step *)
       intros * HS * Hs. inv HS; inv Hs.
       + (* initial state to call rot13 *)
@@ -348,7 +556,7 @@ Section CODE_PROOF.
           replace (Val.offset_ptr (Val.offset_ptr (Val.offset_ptr (Vptr b Ptrofs.zero) Ptrofs.one) Ptrofs.one) Ptrofs.one)
             with (Vptr b (Ptrofs.repr 3)) by easy. reflexivity. }
         apply star_refl.
-        { econstructor.
+        { econstructor
           - unfold Genv.symbol_address. rewrite Hb2. reflexivity.
           -
         }
