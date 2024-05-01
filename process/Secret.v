@@ -798,63 +798,68 @@ End CODE_PROOF.
 
 Require Import CallconvAlgebra CKLR.
 
-Section SELF_SIM.
+Lemma secret_spec_self_sim (R: cklr):
+  forward_simulation (cc_c R) (cc_c R) secret_spec secret_spec.
+Proof.
+  constructor. econstructor; eauto.
+  { intros i; firstorder. }
+  instantiate (1 := fun _ _ _ => _). cbn beta.
+  intros se1 se2 w Hse Hse1. cbn -[secret_spec] in *.
+  apply forward_simulation_step
+    with (match_states := fun '(s1, m1) '(s2, m2) =>
+                            s1 = s2 /\ klr_diam tt (CKLR.match_mem R) w m1 m2); cbn.
+  - intros * Hq Hi. inv Hq. inv Hi. inv H0. inv H.
+    apply match_stbls_proj in Hse.
+    edestruct @Genv.find_symbol_match as (bx & A & B); eauto.
+    rewrite A in H4. inv H4.
+    rewrite Ptrofs.add_zero_l.
+    replace (Ptrofs.repr 0) with Ptrofs.zero by reflexivity.
+    exists (secret1, m2). split. econstructor; eauto.
+    split; eauto. exists w. split; eauto. reflexivity.
+  - intros [s1 m1] [s2 m2] r1 [<- (wx & Hw & Hm)] Hf. inv Hf.
+    eexists. split. econstructor; eauto.
+    exists wx. split; eauto. constructor; eauto.
+  - intros [s1 m1] [s2 m2] q1 [<- (wx & Hw & Hm)] He.
+    exploit match_stbls_acc. apply Hw. apply Hse. intros SE.
+    exploit match_stbls_proj. apply SE. intros HSE. inv He.
+    + exploit @Genv.find_symbol_match. apply HSE. apply HB1.
+      intros (tb1 & Htb1 & Htb2).
+      exploit @Genv.find_symbol_match. apply HSE. apply HB2.
+      intros (tb2 & Htb3 & Htn4).
+      exists wx, (cq (Vptr tb1 Ptrofs.zero) rot13_sig [Vptr tb2 Ptrofs.zero; Vlong (Int64.repr 5)] m2).
+      split. econstructor; eauto.
+      split. repeat econstructor; eauto. congruence.
+      split; eauto.
+      intros r1 r2 [s1' m1'] (wxx & Hwx & Hr) Hf. inv Hf.
+      inv Hr. exists (secret3, m2'). split. econstructor; eauto.
+      split; eauto. exists wxx. split; eauto.
+      etransitivity; eauto.
+    + exploit @Genv.find_symbol_match. apply HSE. apply HB1.
+      intros (tb1 & Htb1 & Htb2).
+      exploit @Genv.find_symbol_match. apply HSE. apply HB2.
+      intros (tb2 & Htb3 & Htn4).
+      exists wx, (cq (Vptr tb1 Ptrofs.zero) write_sig [Vint (Int.repr 1); Vptr tb2 Ptrofs.zero; Vlong (Int64.repr 5)] m2).
+      split. econstructor; eauto.
+      split. repeat econstructor; eauto. congruence.
+      split; eauto.
+      intros r1 r2 [s1' m1'] (wxx & Hwx & Hr) Hf. inv Hf.
+      inv Hr. exists (secret5, m2'). split. econstructor; eauto.
+      split; eauto. exists wxx. split; eauto.
+      etransitivity; eauto.
+  - intros [s1 m1] t [s2 m2] Hstep [s1' m1'] [<- (wx & Hw & Hm)].
+    inv Hstep; eexists (_, m1'); repeat split; try econstructor; eauto.
+    apply cklr_alloc_flag in Hm. congruence.
+  - easy.
+Qed.
 
-  Lemma secret_spec_self_sim (R: cklr):
-    forward_simulation (cc_c R) (cc_c R) secret_spec secret_spec.
-  Proof.
-    constructor. econstructor; eauto.
-    { intros i; firstorder. }
-    instantiate (1 := fun _ _ _ => _). cbn beta.
-    intros se1 se2 w Hse Hse1. cbn -[secret_spec] in *.
-    apply forward_simulation_step
-      with (match_states := fun '(s1, m1) '(s2, m2) =>
-           s1 = s2 /\ klr_diam tt (CKLR.match_mem R) w m1 m2); cbn.
-    - intros * Hq Hi. inv Hq. inv Hi. inv H0. inv H.
-      apply match_stbls_proj in Hse.
-      edestruct @Genv.find_symbol_match as (bx & A & B); eauto.
-      rewrite A in H4. inv H4.
-      rewrite Ptrofs.add_zero_l.
-      replace (Ptrofs.repr 0) with Ptrofs.zero by reflexivity.
-      exists (secret1, m2). split. econstructor; eauto.
-      split; eauto. exists w. split; eauto. reflexivity.
-    - intros [s1 m1] [s2 m2] r1 [<- (wx & Hw & Hm)] Hf. inv Hf.
-      eexists. split. econstructor; eauto.
-      exists wx. split; eauto. constructor; eauto.
-    - intros [s1 m1] [s2 m2] q1 [<- (wx & Hw & Hm)] He.
-      exploit match_stbls_acc. apply Hw. apply Hse. intros SE.
-      exploit match_stbls_proj. apply SE. intros HSE. inv He.
-      + exploit @Genv.find_symbol_match. apply HSE. apply HB1.
-        intros (tb1 & Htb1 & Htb2).
-        exploit @Genv.find_symbol_match. apply HSE. apply HB2.
-        intros (tb2 & Htb3 & Htn4).
-        exists wx, (cq (Vptr tb1 Ptrofs.zero) rot13_sig [Vptr tb2 Ptrofs.zero; Vlong (Int64.repr 5)] m2).
-        split. econstructor; eauto.
-        split. repeat econstructor; eauto. congruence.
-        split; eauto.
-        intros r1 r2 [s1' m1'] (wxx & Hwx & Hr) Hf. inv Hf.
-        inv Hr. exists (secret3, m2'). split. econstructor; eauto.
-        split; eauto. exists wxx. split; eauto.
-        etransitivity; eauto.
-      + exploit @Genv.find_symbol_match. apply HSE. apply HB1.
-        intros (tb1 & Htb1 & Htb2).
-        exploit @Genv.find_symbol_match. apply HSE. apply HB2.
-        intros (tb2 & Htb3 & Htn4).
-        exists wx, (cq (Vptr tb1 Ptrofs.zero) write_sig [Vint (Int.repr 1); Vptr tb2 Ptrofs.zero; Vlong (Int64.repr 5)] m2).
-        split. econstructor; eauto.
-        split. repeat econstructor; eauto. congruence.
-        split; eauto.
-        intros r1 r2 [s1' m1'] (wxx & Hwx & Hr) Hf. inv Hf.
-        inv Hr. exists (secret5, m2'). split. econstructor; eauto.
-        split; eauto. exists wxx. split; eauto.
-        etransitivity; eauto.
-    - intros [s1 m1] t [s2 m2] Hstep [s1' m1'] [<- (wx & Hw & Hm)].
-      inv Hstep; eexists (_, m1'); repeat split; try econstructor; eauto.
-      apply cklr_alloc_flag in Hm. congruence.
-    - easy.
-  Qed.
+Import Invariant.
+Import CallConv.
 
-End SELF_SIM.
+Lemma secret_spec_wt_lessdef:
+  forward_simulation (wt_c @ lessdef_c) (wt_c @ lessdef_c)
+    secret_spec secret_spec.
+Proof.
+Admitted.
 
 Lemma cc_join_fsim {liA1 liA2 liB1 liB2}
   (ccA1 ccA2: callconv liA1 liA2)
@@ -869,18 +874,44 @@ Proof.
   eapply cc_join_fsim; eauto.
 Qed.
 
-Lemma secret_correct:
-  forward_simulation cc_compcert cc_compcert secret_spec
-    (Asm.semantics secret_asm).
+Import Asm VAInject.
+
+Lemma cc_compcert_ref1:
+  ccref cc_compcert
+    (Compiler.cc_cklrs ^ {*} @ (wt_c @ lessdef_c) @ (injp @ cc_c_asm) @ (Asm.cc_asm vainj)).
 Proof.
   unfold cc_compcert.
-  eapply compose_forward_simulations.
-  apply cc_star_fsim.
-  repeat apply cc_join_fsim; try apply secret_spec_self_sim.
-  rewrite <- cc_compose_assoc at 2. rewrite <- cc_compose_assoc.
-  rewrite <- cc_compose_assoc at 2. rewrite <- cc_compose_assoc.
-  eapply compose_forward_simulations.
-  rewrite cc_compose_assoc at 2. rewrite cc_compose_assoc.
-  apply secret_correct'.
-  apply Asmrel.semantics_asm_rel.
+  rewrite !cc_compose_assoc.
+Admitted.
+
+Lemma cc_compcert_ref2:
+  ccref (Compiler.cc_cklrs ^ {*} @ (wt_c @ lessdef_c) @ (injp @ cc_c_asm) @ (Asm.cc_asm vainj))
+    cc_compcert.
+Proof.
+  unfold cc_compcert.
+  rewrite !cc_compose_assoc.
+  rewrite <- (cc_compose_assoc wt_c lessdef_c).
+  rewrite (commute_around _ (R2 := injp)).
+  rewrite cc_star_absorb_r by eauto with cc.
+  rewrite !cc_compose_assoc.
+  reflexivity.
 Qed.
+
+Section NOT_WIN.
+  Hypothesis (Hwin: Archi.win64 = false).
+  Lemma secret_correct:
+    forward_simulation cc_compcert cc_compcert secret_spec
+      (Asm.semantics secret_asm_program).
+  Proof.
+    (* why rewrite not work here? *)
+    eapply open_fsim_ccref. apply cc_compcert_ref2. apply cc_compcert_ref1.
+    eapply compose_forward_simulations.
+    apply cc_star_fsim.
+    repeat apply cc_join_fsim; try apply secret_spec_self_sim.
+    eapply compose_forward_simulations.
+    apply secret_spec_wt_lessdef.
+    eapply compose_forward_simulations.
+    apply secret_correct'. apply Hwin.
+    apply Asmrel.semantics_asm_rel.
+  Qed.
+End NOT_WIN.
