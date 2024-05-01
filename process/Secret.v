@@ -796,7 +796,47 @@ Section CODE_PROOF.
 
 End CODE_PROOF.
 
-Require Import CallconvAlgebra CKLR.
+Import CallconvAlgebra CKLR CKLRAlgebra.
+Import Invariant.
+Import CallConv.
+Import Asm VAInject Inject.
+
+Lemma inj_injp: subcklr inj injp.
+Proof.
+  intros wq se1 se2 m1 m2. cbn.
+  intros Hse Hm. inv Hm. inv Hse. cbn in *.
+  exists (injpw f m1 m2 H). repeat apply conj.
+  - constructor; eauto.
+  - constructor.
+  - apply inject_incr_refl.
+  - intros wr' m1' m2' Hm' Hacc.
+    inv Hm'. inv Hacc.
+    exists (injw f0 (Mem.nextblock m1') (Mem.nextblock m2')).
+    repeat apply conj.
+    + constructor; eauto.
+    + constructor; eauto.
+      * intros * A B. specialize (H11 _ _ _ A B) as (C & D).
+        split; unfold Mem.valid_block in C, D; extlia.
+      * apply H8.
+      * apply H9.
+    + apply inject_incr_refl.
+Qed.
+
+Section NOT_WIN.
+  Hypothesis (Hwin: Archi.win64 = false).
+
+  (* This could be proved directly *)
+  Lemma secret_correct'':
+    forward_simulation (cc_c injp @ cc_c_asm) (cc_c Inject.inj @ cc_c_asm)
+      secret_spec (semantics secret_asm_program).
+  Proof.
+    eapply CallconvAlgebra.open_fsim_ccref. 3: apply secret_correct'.
+    reflexivity. unfold Basics.flip.
+    apply CallconvAlgebra.cc_compose_ref. 2: reflexivity.
+    apply CKLRAlgebra.cc_c_ref. apply inj_injp.
+    eauto.
+  Qed.
+End NOT_WIN.
 
 Lemma secret_spec_self_sim (R: cklr):
   forward_simulation (cc_c R) (cc_c R) secret_spec secret_spec.
@@ -852,14 +892,43 @@ Proof.
   - easy.
 Qed.
 
-Import Invariant.
-Import CallConv.
-
 Lemma secret_spec_wt_lessdef:
   forward_simulation (wt_c @ lessdef_c) (wt_c @ lessdef_c)
     secret_spec secret_spec.
 Proof.
-Admitted.
+  constructor. econstructor; eauto.
+  { intros i; firstorder. }
+  instantiate (1 := fun _ _ _ => _). cbn beta.
+  intros se1 se2 w Hse Hse1. cbn -[secret_spec] in *.
+  set (sg_prop := fun (w: ccworld (wt_c @ lessdef_c)) => snd (snd (fst w)) = signature_main).
+  apply forward_simulation_step
+    with (match_states := fun s1 s2 => sg_prop w /\ s1 = s2); cbn.
+  - intros. inv H0. eprod_crush. inv H. inv H0.
+    eprod_crush. inv H2. inv H7.
+    eexists (_, _). split; econstructor; eauto.
+    reflexivity.
+  - intros. inv H0. eexists (cr (Vint Int.zero) m).
+    subst sg_prop. cbn in *.
+    eprod_crush. inv H0.
+    repeat split; repeat econstructor; eauto.
+  - intros. subst sg_prop. cbn in *. eprod_crush. inv H. inv H0.
+    + eexists (_, (_, _), _), _.
+      repeat apply conj; eauto; try constructor; eauto.
+      * eexists. split; repeat constructor; eauto.
+      * intros. inv H0. eprod_crush. inv H. inv H0.
+        eexists (_, _). repeat split. econstructor; eauto.
+    + eexists (_, (_, _), _), _.
+      repeat apply conj; eauto; try constructor; eauto.
+      * eexists. split; repeat constructor; eauto.
+      * intros. inv H0. eprod_crush. inv H. inv H0.
+        eexists (_, _). repeat split. econstructor; eauto.
+  - intros. subst sg_prop. cbn in *. eprod_crush. inv H0. inv H.
+    + eexists (_, _). repeat split; econstructor; eauto.
+    + eexists (_, _). repeat split; econstructor; eauto.
+    + eexists (_, _). repeat split; econstructor; eauto.
+  - easy.
+    Unshelve. exact tt. exact tt.
+Qed.
 
 Lemma cc_join_fsim {liA1 liA2 liB1 liB2}
   (ccA1 ccA2: callconv liA1 liA2)
@@ -874,15 +943,24 @@ Proof.
   eapply cc_join_fsim; eauto.
 Qed.
 
-Import Asm VAInject.
-
 Lemma cc_compcert_ref1:
   ccref cc_compcert
-    (Compiler.cc_cklrs ^ {*} @ (wt_c @ lessdef_c) @ (injp @ cc_c_asm) @ (Asm.cc_asm vainj)).
+    (Compiler.cc_cklrs ^ {*} @ (wt_c @ lessdef_c) @ (inj @ cc_c_asm) @ (Asm.cc_asm vainj)).
 Proof.
-  unfold cc_compcert.
+  unfold cc_compcert. rewrite ca_cllmma_equiv.
   rewrite !cc_compose_assoc.
-Admitted.
+  etransitivity.
+  {
+    rewrite vainj_vainj, vainj_inj, !cc_asm_compose, !cc_compose_assoc at 1.
+    rewrite <- (cc_compose_assoc wt_c lessdef_c).
+    do 4 rewrite (commute_around _ (R2 := _ vainj)).
+    rewrite cc_star_absorb_r by eauto with cc.
+    do 3 rewrite (commute_around _ (R2 := _ inj)).
+    reflexivity.
+  }
+  rewrite !cc_compose_assoc.
+  reflexivity.
+Qed.
 
 Lemma cc_compcert_ref2:
   ccref (Compiler.cc_cklrs ^ {*} @ (wt_c @ lessdef_c) @ (injp @ cc_c_asm) @ (Asm.cc_asm vainj))
@@ -911,7 +989,7 @@ Section NOT_WIN.
     eapply compose_forward_simulations.
     apply secret_spec_wt_lessdef.
     eapply compose_forward_simulations.
-    apply secret_correct'. apply Hwin.
+    apply secret_correct''. apply Hwin.
     apply Asmrel.semantics_asm_rel.
   Qed.
 End NOT_WIN.
