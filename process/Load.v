@@ -9,6 +9,7 @@ Import ListNotations.
 Require Import Conventions Mach Asm.
 
 Require Import InitMem With.
+Require Import CAsm.
 
 Section WRITE_EMPTY.
 
@@ -293,11 +294,11 @@ Section INIT_ASM.
     |}.
 End INIT_ASM.
 
-Require Import Compiler.
+Require Compiler.
 
 Section INIT_C_ASM.
 
-  Context p tp (Hp: match_prog p tp).
+  Context p tp (Hp: Compiler.match_prog p tp).
 
   Hypothesis
     (Hromatch: forall se m,
@@ -319,7 +320,7 @@ Section INIT_C_ASM.
 
   Lemma match_prog_skel: erase_program p = erase_program tp.
   Proof.
-    intros. edestruct clight_semantic_preservation as [H1 ?]; eauto.
+    intros. edestruct Compiler.clight_semantic_preservation as [H1 ?]; eauto.
     destruct H1. destruct X. apply fsim_skel.
   Qed.
 
@@ -365,10 +366,10 @@ Section INIT_C_ASM.
         { repeat constructor. }
         (* cc_c_asm *)
         instantiate (1 := (se1, caw main_sig
-                                  (((Pregmap.init Vundef) # PC
-                                    <- (Vptr b Ptrofs.zero)# RSP
-                                    <- (Vptr b Ptrofs.zero))# RA
-                                   <- Vnullptr) m, _)).
+                    (((Pregmap.init Vundef) # PC
+                      <- (Vptr b Ptrofs.zero)# RSP
+                      <- (Vptr b Ptrofs.zero))# RA
+                     <- Vnullptr) m, _)).
         eexists ((((Pregmap.init Vundef) # PC
                    <- (Vptr b Ptrofs.zero)) # RSP
                   <- (Vptr b Ptrofs.zero)) # RA
@@ -622,6 +623,8 @@ Section FIND_FUNCT.
       (H1: mf1 c1 f1 f2) (H2: mf2 c2 f2 f3):
       compose_match_fundef mf1 mf2 (c1, c2) f1 f3.
 
+  Import RelOperators.
+
   Lemma match_program_gen_compose
     {C1 C2 F1 F2 F3 V1 V2 V3}
     {c1: C1} {c2: C2} {mf1 mf2 mv1 mv2}
@@ -661,7 +664,7 @@ Section FIND_FUNCT.
       (compose_match_fundef mf1 (if P tt then mf2 else fun _ => eq))
       (rel_compose mv1 (if P tt then mv2 else eq)) (c1, p2) p1 p3.
   Proof.
-    intros A B. unfold match_if in B.
+    intros A B.
     destruct (P tt).
     - unfold match_program in B.
       eapply match_program_gen_compose; eauto.
@@ -685,6 +688,8 @@ Section FIND_FUNCT.
   Lemma if_commute {A B} (P: bool) (r1 r2: A -> B -> Prop) (a: A) (b: B):
     (if P then r1 else r2) a b = (if P then r1 a b else r2 a b).
   Proof. destruct P; reflexivity. Qed.
+
+  Import Compiler.
 
   Lemma compcert_match_program_gen p tp:
     match_prog p tp ->
@@ -818,7 +823,7 @@ Next Obligation.
 Qed.
 
 Lemma cklr_find_symbol_none (c: CKLR.cklr) w se1 se2 i:
-  match_senv c w se1 se2 ->
+  match_senv (cc_c c) w se1 se2 ->
   Genv.find_symbol se1 i = None <->
   Genv.find_symbol se2 i = None.
 Proof.
@@ -892,8 +897,7 @@ Section SYS_C_ASM.
   Import CallconvAlgebra CallConv CKLR.
   Import Inject InjectFootprint Extends VAInject VAExtends.
 
-(* Definition cc_cklrs : callconv li_c li_c := *)
-(*   injp + inj + ext + vainj + vaext. *)
+  Import Compiler.
 
   Inductive acc_cklr : ccworld cc_cklrs -> ccworld cc_cklrs -> Prop :=
   | acc_cklr_vaext w w':
@@ -1374,18 +1378,18 @@ Section SYS_C_ASM.
       match_sys_state wn (se, wi) caw sg
         (sys_write_reply n m1) (sys_write_reply n m2).
 
-  Definition nw_of_world (w: ccworld cc_compcert): sigT (fun n => ccworld (cc_cklrs ^ n)).
+  Definition nw_of_world (w: ccworld CAsm.cc_compcert): sigT (fun n => ccworld (cc_cklrs ^ n)).
   Proof. cbn in w. destruct w. destruct p. exact s0. Defined.
 
-  Definition injw_of_world (w: ccworld cc_compcert): world vainj.
+  Definition injw_of_world (w: ccworld CAsm.cc_compcert): world vainj.
   Proof. cbn in w. destruct w.
          destruct p0. destruct p1. destruct p2.
          exact p3. Defined.
 
-  Definition caw_of_world (w: ccworld cc_compcert): cc_ca_world.
+  Definition caw_of_world (w: ccworld CAsm.cc_compcert): cc_ca_world.
   Proof. cbn in w. eprod_crush. exact c. Defined.
 
-  Definition sig_of_world (w: ccworld cc_compcert): signature.
+  Definition sig_of_world (w: ccworld CAsm.cc_compcert): signature.
   Proof. cbn in w. destruct w.
          destruct p0. destruct p0. destruct p0. exact s1. Defined.
 
@@ -1395,7 +1399,7 @@ Section SYS_C_ASM.
   Proof. cbn. destruct Archi.win64; cbn; lia. Qed.
 
   Lemma sys_c_asm p tp:
-    match_prog p tp -> forward_simulation cc_wp_id cc_compcert (sys_c p) (sys_asm tp).
+    match_prog p tp -> forward_simulation cc_wp_id CAsm.cc_compcert (sys_c p) (sys_asm tp).
   Proof.
     intros H. assert (Hsk: erase_program p = erase_program tp).
     eapply match_prog_skel; eauto.
@@ -1494,11 +1498,11 @@ Section SYS_C_ASM.
           { constructor. constructor. }
           exists (((caw_rs c)#RAX <- v)#PC <- ((caw_rs c)#RA), m0). split.
           { destruct c; cbn in HSG, HRS |- *.
-            subst caw_sg0. constructor; eauto.
+            subst caw_sg. constructor; eauto.
             - intros r. destruct r; cbn; eauto. easy.
             - apply Mem.unchanged_on_refl.
             - rewrite rw_sig_size_arguments.
-              replace (loc_init_args 0 (caw_rs0 RSP))
+              replace (loc_init_args 0 (caw_rs RSP))
                 with (fun (_: block) (_: Z) => False); eauto.
               repeat (apply Axioms.functional_extensionality; intros).
               apply PropExtensionality.propositional_extensionality.
@@ -1525,11 +1529,11 @@ Section SYS_C_ASM.
           { constructor. constructor. }
           exists (((caw_rs c)#RAX <- v)#PC <- ((caw_rs c)#RA), m0). split.
           { destruct c; cbn in HSG, HRS |- *.
-            subst caw_sg0. constructor; eauto.
+            subst caw_sg. constructor; eauto.
             - intros r. destruct r; cbn; eauto. easy.
             - apply Mem.unchanged_on_refl.
             - rewrite rw_sig_size_arguments.
-              replace (loc_init_args 0 (caw_rs0 RSP))
+              replace (loc_init_args 0 (caw_rs RSP))
                 with (fun (_: block) (_: Z) => False); eauto.
               repeat (apply Axioms.functional_extensionality; intros).
               apply PropExtensionality.propositional_extensionality.
@@ -1568,7 +1572,7 @@ End SYS_C_ASM.
 Section REFINE.
 
   Hypothesis (Hwin64: Archi.win64 = false).
-  Import CategoricalComp.
+  Import CategoricalComp CallconvAlgebra.
   Close Scope Z_scope.
 
   Definition load_c (prog: Clight.program) : Smallstep.semantics (li_sys + li_sys) li_wp :=
@@ -1592,7 +1596,7 @@ Section REFINE.
     do 2 rewrite cc_compose_assoc. reflexivity.
   Qed.
 
-  Context p tp (Hp: transf_clight_program p = Errors.OK tp).
+  Context p tp (Hp: Compiler.transf_clight_program p = Errors.OK tp).
 
   Hypothesis
     (Hromatch: forall se m,
@@ -1602,7 +1606,7 @@ Section REFINE.
   Lemma load_c_asm:
     forward_simulation cc_wp_id 1 (load_c p) (load_asm tp).
   Proof.
-    apply transf_clight_program_match in Hp.
+    apply Compiler.transf_clight_program_match in Hp.
     exploit sys_c_asm; eauto. intros Hsys.
     exploit init_c_asm; eauto. intros Hinit.
     unfold load_c, load_asm.
@@ -1611,7 +1615,7 @@ Section REFINE.
     2,3: apply Linking.linkorder_refl.
     eapply categorical_compose_simulation'; eauto.
     2,3: apply Linking.linkorder_refl.
-    exploit clight_semantic_preservation. apply Hp. intros [Hx _].
+    exploit Compiler.clight_semantic_preservation. apply Hp. intros [Hx _].
     eapply open_fsim_ccref; eauto.
     1,2: apply cc_compcert_eqv.
   Qed.
