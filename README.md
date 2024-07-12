@@ -60,6 +60,23 @@ Our constructions are mainly in the `clightp/` directory
   clightp/Example.v
 ```
 
+* The rot13 example with loaders verified using only C program
+```
+  process/With.v
+  process/Pipe.v
+  process/InitMem.v
+  process/Pipe.v
+  process/CAsm.v
+  process/Process.v
+```
+
+* The following file additionally provide a proof of for the secret module 
+  written in assembly and can be plugged into the rot13 example above
+```
+  process/Secret.v
+```
+
+
 ---
 
 Original README.md from CompCertO below
