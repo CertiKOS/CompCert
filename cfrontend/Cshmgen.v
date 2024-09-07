@@ -630,13 +630,14 @@ Definition make_normalization (t: type) (a: expr) :=
 
 Definition make_funcall (x: option ident) (tres: type) (sg: signature)
                       (fn: expr) (args: list expr): stmt :=
-  match x, return_value_needs_normalization sg.(sig_res) with
-  | Some id, true =>
-      Sseq (Scall x sg fn args)
-           (Sset id (make_normalization tres (Evar id)))
-  | _, _ =>
-      Scall x sg fn args
-  end.
+  Scall x sg fn args.
+  (* match x, return_value_needs_normalization sg.(sig_res) with *)
+  (* | Some id, true => *)
+  (*     Sseq (Scall x sg fn args) *)
+  (*          (Sset id (make_normalization tres (Evar id))) *)
+  (* | _, _ => *)
+  (*     Scall x sg fn args *)
+  (* end. *)
 
 (** * Translation of statements *)
 
