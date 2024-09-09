@@ -325,7 +325,7 @@ Next Obligation.
   destruct (Mem.load chunk m1) as [v1 | ] eqn:Hv1; [ | constructor].
   exploit vaext_wf_inj; eauto. intros Hm1.
   inv Hp. cbn in *.
-  assert (delta = 0) by omega. subst delta.
+  assert (delta = 0) by lia. subst delta.
 
   assert (Hinj: Mem.inject (inj_of_bc bc) m1 m2).
   { eapply Mem.inject_extends_compose; eauto. }
@@ -343,7 +343,7 @@ Next Obligation.
   destruct p as [b ofs]. cbn.
   destruct (Mem.store chunk m1) as [m1' | ] eqn:Hm1'; try rauto.
   inv Hm. inv Hptr.
-  assert (delta = 0) by omega. subst delta.
+  assert (delta = 0) by lia. subst delta.
   unfold k1.
 
   exploit vaext_wf_inj; eauto. intros Hm1.
@@ -424,7 +424,7 @@ Next Obligation.
   assert (Hbc: inj_of_bc bc b = Some (b, 0)).
   { destruct Hptr as [Hptr | Hptr].
     - inv Hptr. cbn in H2.
-      replace delta with 0 in H2 by omega. auto.
+      replace delta with 0 in H2 by lia. auto.
     - inv Hptr.
       rewrite H1 in H2.
       inv H3. cbn in H5.
@@ -492,7 +492,7 @@ Qed.
 (** Representable *)
 Next Obligation.
   inv H.
-  dest_inj_of_bc. omega.
+  dest_inj_of_bc. lia.
 Qed.
 
 (** Aligned *)
@@ -510,8 +510,8 @@ Next Obligation.
   dest_inj_of_bc.
   destruct H5 as [Hb | Hofs]; [left | right]. congruence.
   destruct Hofs as [Hofs | Hofs]; [left | right]. congruence.
-  destruct Hofs as [Hofs | Hofs]; [left | right]. omega.
-  omega.
+  destruct Hofs as [Hofs | Hofs]; [left | right]. lia.
+  lia.
 Qed.
 
 (** Perm inv *)

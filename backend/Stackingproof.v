@@ -1499,7 +1499,7 @@ Proof.
     eapply frame_get_outgoing; eauto 2.
     destruct (loc_arguments_acceptable_2 _ _ REG) as [? ?].
     unfold slot_valid, proj_sumbool.
-    rewrite zle_true by omega. rewrite pred_dec_true by auto. reflexivity.
+    rewrite zle_true by lia. rewrite pred_dec_true by auto. reflexivity.
 Qed.
 
 Lemma match_stacks_range_perm_args m j cs cs' sg sb sofs:
