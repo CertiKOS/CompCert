@@ -20,7 +20,7 @@ Require Import Asmgen Asmgenproof0 Asmgenproof1.
 Require Import LanguageInterface CKLR Extends.
 
 Definition match_prog (p: Mach.program) (tp: Asm.program) :=
-  match_program (fun _ f tf => transf_fundef f = OK tf) eq p tp.
+  match_program (fun _ f tf => Asmgen.transf_fundef f = OK tf) eq p tp.
 
 Lemma transf_program_match:
   forall p tp, transf_program p = OK tp -> match_prog p tp.
@@ -42,7 +42,7 @@ Lemma functions_translated:
   forall vf f,
   Genv.find_funct ge vf = Some f ->
   exists b tf,
-  Genv.find_funct_ptr tge b = Some tf /\ transf_fundef f = OK tf /\ vf = Vptr b Ptrofs.zero.
+  Genv.find_funct_ptr tge b = Some tf /\ Asmgen.transf_fundef f = OK tf /\ vf = Vptr b Ptrofs.zero.
 Proof.
   intros.
   destruct vf; try discriminate. simpl in H. destruct Ptrofs.eq_dec; try discriminate; subst.
@@ -73,7 +73,7 @@ Lemma transf_function_no_overflow:
   transf_function f = OK tf -> list_length_z (fn_code tf) <= Ptrofs.max_unsigned.
 Proof.
   intros. monadInv H. destruct (zlt Ptrofs.max_unsigned (list_length_z (fn_code x))); monadInv EQ0.
-  omega.
+  lia.
 Qed.
 
 Lemma exec_straight_exec:
@@ -338,8 +338,8 @@ Proof.
   split. unfold goto_label. rewrite P. rewrite H1. auto.
   split. rewrite Pregmap.gss. constructor; auto.
   rewrite Ptrofs.unsigned_repr. replace (pos' - 0) with pos' in Q.
-  auto. omega.
-  generalize (transf_function_no_overflow _ _ H0). omega.
+  auto. lia.
+  generalize (transf_function_no_overflow _ _ H0). lia.
   intros. apply Pregmap.gso; auto.
 Qed.
 
@@ -431,7 +431,7 @@ Proof.
   try (replace (Mem.nextblock m) with (Mem.nextblock m') by congruence);
   try apply Ple_refl.
   - replace (Mem.nextblock m') with (Pos.succ (Mem.nextblock m)) by congruence.
-    xomega.
+    extlia.
   - destruct zlt.
     + apply Mem.nextblock_free in H1. rewrite <- H1. subst. reflexivity.
     + inv H1. reflexivity.
@@ -516,7 +516,7 @@ Lemma alloc_sp_fresh m lo hi m' stk ofs:
 Proof.
   intros Hm Hstk.
   apply Mem.alloc_result in Hstk. cbn. subst.
-  destruct plt; auto. xomega.
+  destruct plt; auto. extlia.
 Qed.
 
 (** We need to show that, in the simulation diagram, we cannot
@@ -707,7 +707,7 @@ Opaque loadind.
     eapply functions_transl; eauto. eapply find_instr_tail; eauto.
     simpl. replace (chunk_of_type Tptr) with Mptr in * by (unfold Tptr, Mptr; destruct Archi.ptr64; auto).
     rewrite C. rewrite A. rewrite <- (sp_val _ _ _ AG).
-    unfold free'. rewrite zlt_false by omega. eauto.
+    unfold free'. rewrite zlt_false by lia. eauto.
     apply star_one. eapply exec_step_internal.
     transitivity (Val.offset_ptr rs0#PC Ptrofs.one). auto. rewrite <- H3. simpl. eauto.
     eapply functions_transl; eauto. eapply find_instr_tail; eauto.
@@ -726,7 +726,7 @@ Opaque loadind.
     eapply functions_transl; eauto. eapply find_instr_tail; eauto.
     simpl. replace (chunk_of_type Tptr) with Mptr in * by (unfold Tptr, Mptr; destruct Archi.ptr64; auto).
     rewrite C. rewrite A. rewrite <- (sp_val _ _ _ AG).
-    unfold free'. rewrite zlt_true by omega. rewrite E. eauto.
+    unfold free'. rewrite zlt_true by lia. rewrite E. eauto.
     apply star_one. eapply exec_step_internal.
     transitivity (Val.offset_ptr rs0#PC Ptrofs.one). auto. rewrite <- H3. simpl. eauto.
     eapply functions_transl; eauto. eapply find_instr_tail; eauto.
@@ -747,7 +747,7 @@ Opaque loadind.
     eapply functions_transl; eauto. eapply find_instr_tail; eauto.
     simpl. replace (chunk_of_type Tptr) with Mptr in * by (unfold Tptr, Mptr; destruct Archi.ptr64; auto).
     rewrite C. rewrite A. rewrite <- (sp_val _ _ _ AG).
-    unfold free'. rewrite zlt_false by omega. eauto.
+    unfold free'. rewrite zlt_false by lia. eauto.
     apply star_one. eapply exec_step_internal.
     transitivity (Val.offset_ptr rs0#PC Ptrofs.one). auto. rewrite <- H3. simpl. eauto.
     eapply functions_transl; eauto. eapply find_instr_tail; eauto.
@@ -763,7 +763,7 @@ Opaque loadind.
     eapply functions_transl; eauto. eapply find_instr_tail; eauto.
     simpl. replace (chunk_of_type Tptr) with Mptr in * by (unfold Tptr, Mptr; destruct Archi.ptr64; auto).
     rewrite C. rewrite A. rewrite <- (sp_val _ _ _ AG).
-    unfold free'. rewrite zlt_true by omega. rewrite E. eauto.
+    unfold free'. rewrite zlt_true by lia. rewrite E. eauto.
     apply star_one. eapply exec_step_internal.
     transitivity (Val.offset_ptr rs0#PC Ptrofs.one). auto. rewrite <- H3. simpl. eauto.
     eapply functions_transl; eauto. eapply find_instr_tail; eauto.
@@ -936,7 +936,7 @@ Transparent destroyed_by_jumptable.
     eapply plus_left. eapply exec_step_internal. eauto.
     eapply functions_transl; eauto. eapply find_instr_tail; eauto.
     simpl. rewrite C. rewrite A. rewrite <- (sp_val _ _ _ AG).
-    unfold free'. rewrite zlt_false by omega. eauto.
+    unfold free'. rewrite zlt_false by lia. eauto.
     apply star_one. eapply exec_step_internal.
     transitivity (Val.offset_ptr rs0#PC Ptrofs.one). auto. rewrite <- H3. simpl. eauto.
     eapply functions_transl; eauto. eapply find_instr_tail; eauto.
@@ -951,7 +951,7 @@ Transparent destroyed_by_jumptable.
     eapply plus_left. eapply exec_step_internal. eauto.
     eapply functions_transl; eauto. eapply find_instr_tail; eauto.
     simpl. rewrite C. rewrite A. rewrite <- (sp_val _ _ _ AG).
-    unfold free'. rewrite zlt_true by omega. rewrite E. eauto.
+    unfold free'. rewrite zlt_true by lia. rewrite E. eauto.
     apply star_one. eapply exec_step_internal.
     transitivity (Val.offset_ptr rs0#PC Ptrofs.one). auto. rewrite <- H3. simpl. eauto.
     eapply functions_transl; eauto. eapply find_instr_tail; eauto.
@@ -990,12 +990,12 @@ Transparent destroyed_by_jumptable.
     congruence.
   }
   econstructor; eauto.
-  eapply match_stack_incr_bound; eauto. rewrite H3. xomega.
-  constructor. rewrite H3. erewrite <- Mem.alloc_result; eauto. xomega.
+  eapply match_stack_incr_bound; eauto. rewrite H3. extlia.
+  constructor. rewrite H3. erewrite <- Mem.alloc_result; eauto. extlia.
   eapply alloc_sp_fresh; eauto. eapply match_stack_nextblock; eauto.
   unfold nextinstr. rewrite Pregmap.gss. repeat rewrite Pregmap.gso; auto with asmgen.
   inv ATPC. simpl. constructor; eauto.
-  unfold fn_code. eapply code_tail_next_int. simpl in g. omega.
+  unfold fn_code. eapply code_tail_next_int. simpl in g. lia.
   constructor.
   apply agree_nextinstr. eapply agree_change_sp; eauto.
 Transparent destroyed_at_function_entry.
@@ -1034,7 +1034,7 @@ Transparent destroyed_at_function_entry.
 
 - (* return *)
   inv STACKS. simpl in *.
-  right. split. omega. split. auto.
+  right. split. lia. split. auto.
   erewrite agree_sp in LIVE by eauto.
   rewrite LIVE in H6. inv H6.
   econstructor; eauto.

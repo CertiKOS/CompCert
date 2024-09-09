@@ -231,7 +231,7 @@ Proof.
 Qed.
 
 Global Instance cc_compose_ref_params:
-  Params (@cc_compose) 2.
+  Params (@cc_compose) 2 := {}.
 
 
 (** * Kleene algebra *)
@@ -318,8 +318,9 @@ Section JOIN.
 
   (** Trivial consequences of the least upper bound property. *)
 
-  Hint Resolve cc_join_lub cc_join_l cc_join_r (reflexivity (R:=ccref)).
-  Hint Unfold cceqv.
+  Hint Resolve cc_join_lub cc_join_l cc_join_r : core.
+  Hint Resolve (fun li1 li2 => reflexivity (R := @ccref li1 li2)) : core.
+  Hint Unfold cceqv : core.
 
   Global Instance cc_join_ref:
     Proper (ccref ++> ccref ++> ccref) cc_join.
@@ -367,8 +368,8 @@ Section JOIN.
     | cc_join_ms_intror a b x y:
         R2 a b x y -> cc_join_ms R1 R2 (inr a) (inr b) x y.
 
-  Hint Constructors cc_join_ms.
-  Hint Constructors Relation_Operators.le_AsB.
+  Hint Constructors cc_join_ms : core.
+  Hint Constructors Relation_Operators.le_AsB : core.
 
   Lemma cc_join_fsim {liA1 liA2} (ccA: callconv liA1 liA2) ccB1 ccB2 L1 L2:
     forward_simulation ccA ccB1 L1 L2 ->
@@ -429,7 +430,7 @@ Infix "+" := cc_join : cc_scope.
 
 Create HintDb cc.
 Hint Resolve cc_join_ub_l cc_join_ub_r cc_join_l cc_join_r : cc.
-Hint Resolve (reflexivity (R := ccref)) : cc.
+Hint Resolve (fun li1 li2 => reflexivity (R := @ccref li1 li2)) : cc.
 
 (** ** Superposition *)
 
@@ -503,9 +504,9 @@ Section STAR.
   Program Definition cc_star: callconv li li :=
     {|
       ccworld := { n : nat & ccworld (cc_pow n) };
-      match_senv := fun '(existT n w) => match_senv (cc_pow n) w;
-      match_query := fun '(existT n w) => match_query (cc_pow n) w;
-      match_reply := fun '(existT n w) => match_reply (cc_pow n) w;
+      match_senv := fun '(existT _ n w) => match_senv (cc_pow n) w;
+      match_query := fun '(existT _ n w) => match_query (cc_pow n) w;
+      match_reply := fun '(existT _ n w) => match_reply (cc_pow n) w;
     |}.
   Next Obligation.
     induction w.
@@ -693,8 +694,8 @@ Section CC_STAR_FSIM.
       fsim_match_states (FS n) se1 se2 ws idx s1 s2 ->
       cc_star_ms se1 se2 (existT _ n ws) (existT _ n idx) s1 s2.
 
-  Hint Constructors cc_star_ms.
-  Hint Constructors Relation_Operators.lexprod.
+  Hint Constructors cc_star_ms : core.
+  Hint Constructors Relation_Operators.lexprod : core.
 
   Definition cc_star_fsim_components:
     fsim_components (ccA^{*}) (ccB^{*}) L L.

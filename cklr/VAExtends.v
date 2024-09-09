@@ -66,9 +66,9 @@ Proof.
   - intros [se1 bc1 m1 H1] [se2 bc2 m2 H2] [se3 bc3 m3 H3].
     intros [Hse12 Hbc12 Hnb12 Hld12] [Hse23 Hbc23 Hnb23 Hld23]; cbn in *.
     constructor; cbn in *; try (etransitivity; eauto).
-    + rewrite Hbc23; auto. xomega.
+    + rewrite Hbc23; auto. extlia.
     + eapply Hld12; auto. eapply Hld23; auto.
-      * xomega.
+      * extlia.
       * rewrite Hbc12; auto.
 Qed.
 
@@ -171,7 +171,7 @@ Proof.
   split; try discriminate.
   intros Hb; exfalso.
   exploit mmatch_below; eauto. rewrite Hb; discriminate.
-  xomega.
+  extlia.
 Qed.
 
 Lemma alloc_bc_incr bc m am :
@@ -181,7 +181,7 @@ Proof.
   intros Hm x VALID. cbn.
   destruct Pos.eqb eqn:Hx; try reflexivity.
   apply Pos.eqb_eq in Hx; subst.
-  exploit mmatch_below; eauto. xomega.
+  exploit mmatch_below; eauto. extlia.
 Qed.
 
 Lemma alloc_mmatch m lo hi m' b bc am :
@@ -235,10 +235,10 @@ Proof.
   - intros x Hx. cbn in Hx.
     rewrite (Mem.nextblock_alloc m lo hi m' b); auto.
     destruct Pos.eqb eqn:Hxeq.
-    + apply Pos.eqb_eq in Hxeq. xomega.
+    + apply Pos.eqb_eq in Hxeq. extlia.
     + etransitivity.
       * eapply mmatch_below; eauto.
-      * xomega.
+      * extlia.
 Qed. 
 
 Next Obligation.
@@ -264,14 +264,14 @@ Next Obligation.
   - constructor; cbn; auto.
     + rewrite (Mem.alloc_result m1 lo hi m1' b); auto.
       intros. destruct Pos.eqb eqn:Heq; auto.
-      apply Pos.eqb_eq in Heq. xomega.
+      apply Pos.eqb_eq in Heq. extlia.
     + rewrite (Mem.nextblock_alloc m1 lo hi m1' b); auto.
-      xomega.
+      extlia.
     + intros.
       erewrite <- Mem.loadbytes_alloc_unchanged; eauto.
   - rewrite Hm2'. repeat rstep.
     + constructor.
-      edestruct (Mem.alloc_extends m1 m2 lo hi b m1' lo hi); eauto; xomega.
+      edestruct (Mem.alloc_extends m1 m2 lo hi b m1' lo hi); eauto; extlia.
     + red. cbn. unfold inj_of_bc. cbn.
       rewrite Pos.eqb_refl. reflexivity.
 Qed.
@@ -325,7 +325,7 @@ Next Obligation.
   destruct (Mem.load chunk m1) as [v1 | ] eqn:Hv1; [ | constructor].
   exploit vaext_wf_inj; eauto. intros Hm1.
   inv Hp. cbn in *.
-  assert (delta = 0) by omega. subst delta.
+  assert (delta = 0) by lia. subst delta.
 
   assert (Hinj: Mem.inject (inj_of_bc bc) m1 m2).
   { eapply Mem.inject_extends_compose; eauto. }
@@ -343,7 +343,7 @@ Next Obligation.
   destruct p as [b ofs]. cbn.
   destruct (Mem.store chunk m1) as [m1' | ] eqn:Hm1'; try rauto.
   inv Hm. inv Hptr.
-  assert (delta = 0) by omega. subst delta.
+  assert (delta = 0) by lia. subst delta.
   unfold k1.
 
   exploit vaext_wf_inj; eauto. intros Hm1.
@@ -424,7 +424,7 @@ Next Obligation.
   assert (Hbc: inj_of_bc bc b = Some (b, 0)).
   { destruct Hptr as [Hptr | Hptr].
     - inv Hptr. cbn in H2.
-      replace delta with 0 in H2 by omega. auto.
+      replace delta with 0 in H2 by lia. auto.
     - inv Hptr.
       rewrite H1 in H2.
       inv H3. cbn in H5.
@@ -492,7 +492,7 @@ Qed.
 (** Representable *)
 Next Obligation.
   inv H.
-  dest_inj_of_bc. omega.
+  dest_inj_of_bc. lia.
 Qed.
 
 (** Aligned *)
@@ -510,8 +510,8 @@ Next Obligation.
   dest_inj_of_bc.
   destruct H5 as [Hb | Hofs]; [left | right]. congruence.
   destruct Hofs as [Hofs | Hofs]; [left | right]. congruence.
-  destruct Hofs as [Hofs | Hofs]; [left | right]. omega.
-  omega.
+  destruct Hofs as [Hofs | Hofs]; [left | right]. lia.
+  lia.
 Qed.
 
 (** Perm inv *)

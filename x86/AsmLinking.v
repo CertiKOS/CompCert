@@ -106,18 +106,18 @@ Section ASM_LINKING.
   Qed.
 
   Lemma leb_refl b:
-    leb b b.
+    Bool.le b b.
   Proof.
     destruct b; cbn; auto.
   Qed.
 
   Lemma leb_true b:
-    leb b true.
+    Bool.le b true.
   Proof.
     destruct b; cbn; auto.
   Qed.
 
-  Hint Resolve p_linkorder leb_refl leb_true.
+  Hint Resolve p_linkorder leb_refl leb_true : core.
 
   Section SE.
     Context (se: Genv.symtbl) (init_nb: block).
@@ -142,7 +142,7 @@ Section ASM_LINKING.
       match_stack k b ->
       Ple init_nb b.
     Proof.
-      induction 1; xomega.
+      induction 1; extlia.
     Qed.
 
     (** Liveness of the current component vs. whole program.
@@ -174,12 +174,12 @@ Section ASM_LINKING.
       option_le (match_liveness nb sp) (inner_sp nb sp) (inner_sp init_nb sp).
     Proof.
       intros Hnb. unfold inner_sp. destruct sp; try constructor.
-      repeat destruct plt; eauto using match_liveness_refl; try xomega.
-      constructor; cbn; destruct plt; auto; xomega.
+      repeat destruct plt; eauto using match_liveness_refl; try extlia.
+      constructor; cbn; destruct plt; auto; extlia.
     Qed.
 
-    Hint Constructors match_liveness.
-    Hint Resolve match_inner_sp.
+    Hint Constructors match_liveness : core.
+    Hint Resolve match_inner_sp : core.
 
     (** To match the state of the composite semantics with that
       of the whole program, we require that the activation stack
@@ -192,7 +192,7 @@ Section ASM_LINKING.
           match_stack k nb ->
           match_liveness nb rs#SP live1 live2 ->
           Ple nb (Mem.nextblock m) ->
-          option_le leb (inner_sp init_nb rs#SP) (Some live2) ->
+          option_le Bool.le (inner_sp init_nb rs#SP) (Some live2) ->
           match_states (st L i (nb, State rs m live1) :: k) (State rs m live2).
 
     (** ** Simulation properties *)
@@ -200,7 +200,7 @@ Section ASM_LINKING.
     (** *** [exec_instr] *)
 
     Lemma liveness_top live:
-      option_le leb live (Some true).
+      option_le Bool.le live (Some true).
     Proof.
       destruct live; constructor; auto.
     Qed.
@@ -215,7 +215,7 @@ Section ASM_LINKING.
 
     Lemma exec_load_live chunk m a rs rd rs' m' live live':
       exec_load se chunk m a rs rd = Next' rs' m' live' ->
-      option_le leb live (Some live').
+      option_le Bool.le live (Some live').
     Proof.
       unfold exec_load. destruct Mem.loadv; inversion 1.
       destruct live; constructor; auto.
@@ -234,7 +234,7 @@ Section ASM_LINKING.
 
     Lemma exec_store_live chunk m a rs r1 rd rs' m' live live':
       exec_store se chunk m a rs r1 rd = Next' rs' m' live' ->
-      option_le leb live (Some live').
+      option_le Bool.le live (Some live').
     Proof.
       unfold exec_store. destruct Mem.storev; inversion 1.
       destruct live; constructor; auto.
@@ -251,7 +251,7 @@ Section ASM_LINKING.
 
     Lemma goto_label_live b f l rs m rs' m' live:
       goto_label f l rs m = Next' rs' m' live ->
-      option_le leb b (Some live).
+      option_le Bool.le b (Some live).
     Proof.
       unfold goto_label. destruct label_pos, (rs PC); inversion 1.
       destruct b; constructor; auto.
@@ -259,7 +259,7 @@ Section ASM_LINKING.
 
     Hint Resolve
       exec_load_nextblock exec_store_nextblock goto_label_nextblock
-      exec_load_live exec_store_live goto_label_live.
+      exec_load_live exec_store_live goto_label_live : core.
 
     Lemma exec_instr_match nb f instr rs m rs' m' live:
       Ple init_nb nb ->
@@ -269,7 +269,7 @@ Section ASM_LINKING.
         exec_instr init_nb se f instr rs m = Next' rs' m' live' /\
         match_liveness nb rs'#SP live live' /\
         Ple nb (Mem.nextblock m') /\
-        option_le leb (inner_sp init_nb (rs' RSP)) (Some live').
+        option_le Bool.le (inner_sp init_nb (rs' RSP)) (Some live').
     Proof.
       intros Hnb Hm H.
       destruct instr; cbn in H |- *;
@@ -289,14 +289,14 @@ Section ASM_LINKING.
         apply Mem.nextblock_store in Heqo0. rewrite Heqo0.
         apply Mem.nextblock_store in Heqo. rewrite Heqo.
         apply Mem.nextblock_alloc in Heqp0. rewrite Heqp0.
-        eexists. intuition (eauto using liveness_top; xomega).
+        eexists. intuition (eauto using liveness_top; extlia).
       - (* Pfreeframe *)
         assert (Mem.nextblock m' = Mem.nextblock m). {
           unfold free' in Heqo1. destruct zlt; try congruence.
           eapply Mem.nextblock_free; eauto.
         }
         rewrite H.
-        eexists. intuition (eauto using liveness_top; xomega).
+        eexists. intuition (eauto using liveness_top; extlia).
     Qed.
 
     (** *** [step] *)
@@ -310,7 +310,7 @@ Section ASM_LINKING.
         step init_nb (Genv.globalenv se p) (State rs m live2) t (State rs' m' live2') /\
         Ple nb (Mem.nextblock m') /\
         match_liveness nb rs'#SP live1' live2' /\
-        option_le leb (inner_sp init_nb rs'#SP) (Some live2').
+        option_le Bool.le (inner_sp init_nb rs'#SP) (Some live2').
     Proof.
       intros H Hlive Hnb Hm. inv H; inv Hlive; subst.
       - (* instruction *)
@@ -320,7 +320,7 @@ Section ASM_LINKING.
       - (* builtin *)
         eapply find_internal_ptr_linkorder in FIND; eauto. cbn in *.
         exists true. intuition eauto using exec_step_builtin, liveness_top.
-        apply Events.external_call_nextblock in CALL. xomega.
+        apply Events.external_call_nextblock in CALL. extlia.
       - (* external *)
         assert (Genv.find_funct_ptr (Genv.globalenv se p) b = Some (External ef)).
         {
@@ -328,10 +328,10 @@ Section ASM_LINKING.
           destruct ef; try contradiction; inv Hlo; auto.
         }
         replace (Pregmap.set _ _ _ RSP) with rs#SP
-          by (destruct ef_sig, sig_res as [[]|]; reflexivity).
+          by (destruct ef_sig, sig_res as [[ | | | | | ] | | | | | ]; reflexivity).
         pose proof (match_inner_sp nb (rs RSP) Hnb) as NB. rewrite ISP in NB. inv NB.
         eexists. intuition eauto using exec_step_external, Some_le_def.
-        apply Events.external_call_nextblock in CALL. xomega.
+        apply Events.external_call_nextblock in CALL. extlia.
     Qed.
 
   End SE.
@@ -354,7 +354,7 @@ Section ASM_LINKING.
   Definition measure (S : Genv.symtbl * list (frame L)): nat :=
     match S with
       | (_, nil) => 0
-      | (se, st i (nb, State rs m live) :: k) =>
+      | (se, st _ i (nb, State rs m live) :: k) =>
         length k +
         if live then
           match Genv.find_funct (Genv.globalenv se (p_ i)) rs#PC with
@@ -433,7 +433,7 @@ Section ASM_LINKING.
         { inv Hl. econstructor; eauto. }
         econstructor; eauto.
         * destruct Hisp; congruence.
-        * xomega.
+        * extlia.
         * rewrite <- Hlive'. reflexivity.
     - (* simulation *)
       intros s1 t s1' Hstep1 idx [nb s2] [Hidx Hs]. subst. cbn in *.
@@ -450,7 +450,7 @@ Section ASM_LINKING.
         eexists (_, _), (nb, _). repeat apply conj; auto.
         right. intuition auto.
         * eapply star_refl.
-        * red. cbn. rewrite H10, H7. xomega.
+        * red. cbn. rewrite H10, H7. extlia.
         * constructor; cbn; eauto using match_liveness_refl, Ple_refl.
           econstructor; eauto.
       + (* pop *)
@@ -459,7 +459,7 @@ Section ASM_LINKING.
         eexists (_, _), (_, _). intuition auto.
         {
           right. split; auto using star_refl. red. cbn.
-          clear. destruct Genv.find_funct as [[|]|], live; xomega.
+          clear. destruct Genv.find_funct as [[|]|], live; extlia.
         }
         inv H5.
         * constructor; eauto using Ple_trans.

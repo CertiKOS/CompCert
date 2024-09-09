@@ -108,9 +108,9 @@ module Target : TARGET =
     let name_of_section = function
       | Section_text         -> ".text"
       | Section_data i | Section_small_data i ->
-          if i then ".data" else common_section ()
+          variable_section ~sec:".data" ~bss:".bss" i
       | Section_const i | Section_small_const i ->
-          if i || (not !Clflags.option_fcommon) then ".section	.rodata" else "COMM"
+          variable_section ~sec:".section	.rodata" i
       | Section_string       -> ".section	.rodata"
       | Section_literal      -> ".section	.rodata"
       | Section_jumptable    -> ".section	.rodata"
@@ -315,12 +315,10 @@ module Target : TARGET =
          fprintf oc "	sra	%a, %a, %a\n" ireg rd ireg0 rs1 ireg0 rs2
   
       (* Unconditional jumps.  Links are always to X1/RA. *)
-      (* TODO: fix up arguments for calls to variadics, to move *)
-      (* floating point arguments to integer registers.  How? *)
       | Pj_l(l) ->
          fprintf oc "	j	%a\n" print_label l
       | Pj_s(s, sg) ->
-         fprintf oc "	j	%a\n" symbol s
+         fprintf oc "	jump	%a, x31\n" symbol s
       | Pj_r(r, sg) ->
          fprintf oc "	jr	%a\n" ireg r
       | Pjal_s(s, sg) ->
@@ -392,8 +390,12 @@ module Target : TARGET =
          fprintf oc "	fmv.d	%a, %a\n"     freg fd freg fs
       | Pfmvxs (rd,fs) ->
          fprintf oc "	fmv.x.s	%a, %a\n"     ireg rd freg fs
+      | Pfmvsx (fd,rs) ->
+         fprintf oc "	fmv.s.x	%a, %a\n"     freg fd ireg rs
       | Pfmvxd (rd,fs) ->
          fprintf oc "	fmv.x.d	%a, %a\n"     ireg rd freg fs
+      | Pfmvdx (fd,rs) ->
+         fprintf oc "	fmv.d.x	%a, %a\n"     freg fd ireg rs
 
       (* 32-bit (single-precision) floating point *)
       | Pfls (fd, ra, ofs) ->

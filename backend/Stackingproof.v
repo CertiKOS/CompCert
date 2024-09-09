@@ -60,7 +60,7 @@ Lemma slot_outgoing_argument_valid:
 Proof.
   intros. exploit loc_arguments_acceptable_2; eauto. intros [A B].
   unfold slot_valid. unfold proj_sumbool.
-  rewrite zle_true by omega.
+  rewrite zle_true by lia.
   rewrite pred_dec_true by auto.
   auto.
 Qed.
@@ -131,7 +131,7 @@ Proof.
   destruct (wt_function f); simpl negb.
   destruct (zlt Ptrofs.max_unsigned (fe_size (make_env (function_bounds f)))).
   intros; discriminate.
-  intros. unfold fe. unfold b. omega.
+  intros. unfold fe. unfold b. lia.
   intros; discriminate.
 Qed.
 
@@ -141,13 +141,13 @@ Proof.
   pose proof size_no_overflow. subst b fe.
   etransitivity; eauto; clear.
   cbv [fe_ofs_arg fe_size make_env].
-  assert ((if Archi.ptr64 then 8 else 4) > 0) by (destruct Archi.ptr64; xomega).
+  assert ((if Archi.ptr64 then 8 else 4) > 0) by (destruct Archi.ptr64; extlia).
   repeat
     match goal with
     | |- context [align ?x ?a] =>
       lazymatch goal with
       | H: x <= align x a |- _ => fail
-      | _ => assert (x <= align x a) by (apply (align_le x a); xomega)
+      | _ => assert (x <= align x a) by (apply (align_le x a); extlia)
       end
     | |- context [size_callee_save_area ?b ?x] =>
       lazymatch goal with
@@ -159,7 +159,7 @@ Proof.
   pose proof (bound_local_pos (function_bounds f)).
   pose proof (bound_outgoing_pos (function_bounds f)).
   pose proof (bound_stack_data_pos (function_bounds f)).
-  xomega.
+  extlia.
 Qed.
 
 Remark bound_stack_data_stacksize:
@@ -230,7 +230,7 @@ Next Obligation.
 - exploit H4; eauto. intros (v & A & B). exists v; split; auto.
   eapply Mem.load_unchanged_on; eauto.
   simpl; intros. rewrite size_type_chunk, typesize_typesize in H8.
-  split; auto. omega.
+  split; auto. lia.
 Qed.
 Next Obligation.
   eauto with mem.
@@ -245,7 +245,7 @@ Remark valid_access_location:
 Proof.
   intros; split.
 - red; intros. apply Mem.perm_implies with Freeable; auto with mem.
-  apply H0. rewrite size_type_chunk, typesize_typesize in H4. omega.
+  apply H0. rewrite size_type_chunk, typesize_typesize in H4. lia.
 - rewrite align_type_chunk. apply Z.divide_add_r.
   apply Z.divide_trans with 8; auto.
   exists (8 / (4 * typealign ty)); destruct ty; reflexivity.
@@ -263,7 +263,7 @@ Proof.
   intros. destruct H as (D & E & F & G & H).
   exploit H; eauto. intros (v & U & V). exists v; split; auto.
   unfold load_stack; simpl. rewrite Ptrofs.add_zero_l, Ptrofs.unsigned_repr; auto.
-  unfold Ptrofs.max_unsigned. generalize (typesize_pos ty). omega.
+  unfold Ptrofs.max_unsigned. generalize (typesize_pos ty). lia.
 Qed.
 
 Lemma set_location:
@@ -282,19 +282,19 @@ Proof.
   { red; intros; eauto with mem. }
   exists m'; split.
 - unfold store_stack; simpl. rewrite Ptrofs.add_zero_l, Ptrofs.unsigned_repr; eauto.
-  unfold Ptrofs.max_unsigned. generalize (typesize_pos ty). omega.
+  unfold Ptrofs.max_unsigned. generalize (typesize_pos ty). lia.
 - simpl. intuition auto.
 + unfold Locmap.set.
   destruct (Loc.eq (S sl ofs ty) (S sl ofs0 ty0)); [|destruct (Loc.diff_dec (S sl ofs ty) (S sl ofs0 ty0))].
 * (* same location *)
   inv e. rename ofs0 into ofs. rename ty0 into ty.
   exists (Val.load_result (chunk_of_type ty) v'); split.
-  eapply Mem.load_store_similar_2; eauto. omega.
+  eapply Mem.load_store_similar_2; eauto. lia.
   apply Val.load_result_inject; auto.
 * (* different locations *)
   exploit H; eauto. intros (v0 & X & Y). exists v0; split; auto.
   rewrite <- X; eapply Mem.load_store_other; eauto.
-  destruct d. congruence. right. rewrite ! size_type_chunk, ! typesize_typesize. omega.
+  destruct d. congruence. right. rewrite ! size_type_chunk, ! typesize_typesize. lia.
 * (* overlapping locations *)
   destruct (Mem.valid_access_load m' (chunk_of_type ty0) sp (pos + 4 * ofs0)) as [v'' LOAD].
   apply Mem.valid_access_implies with Writable; auto with mem.
@@ -303,7 +303,7 @@ Proof.
 + apply (m_invar P) with m; auto.
   eapply Mem.store_unchanged_on; eauto.
   intros i; rewrite size_type_chunk, typesize_typesize. intros; red; intros.
-  eelim C; eauto. simpl. split; auto. omega.
+  eelim C; eauto. simpl. split; auto. lia.
 Qed.
 
 Lemma initial_locations:
@@ -963,8 +963,8 @@ Local Opaque mreg_type.
   { unfold pos1. apply Z.divide_trans with sz.
     unfold sz; rewrite <- size_type_chunk. apply align_size_chunk_divides.
     apply align_divides; auto. }
-  apply range_drop_left with (mid := pos1) in SEP; [ | omega ].
-  apply range_split with (mid := pos1 + sz) in SEP; [ | omega ].
+  apply range_drop_left with (mid := pos1) in SEP; [ | lia ].
+  apply range_split with (mid := pos1 + sz) in SEP; [ | lia ].
   unfold sz at 1 in SEP. rewrite <- size_type_chunk in SEP.
   apply range_contains in SEP; auto.
   exploit (contains_set_stack (fun v' => Val.inject j (ls (R r)) v') (rs r)).
@@ -1104,7 +1104,7 @@ Local Opaque b fe.
   instantiate (1 := fe_stack_data fe). tauto.
   reflexivity.
   instantiate (1 := fe_stack_data fe + bound_stack_data b). rewrite Z.max_comm. reflexivity.
-  generalize (bound_stack_data_pos b) size_no_overflow; omega.
+  generalize (bound_stack_data_pos b) size_no_overflow; lia.
   tauto.
   tauto.
   clear SEP. intros (j' & SEP & INCR & SAME & INJSEP).
@@ -1434,7 +1434,7 @@ Proof.
   + eapply inject_incr_trans; eauto.
   + intros. destruct (j b1) as [[xb2 xdelta] | ] eqn:Hb1; eauto.
     * erewrite H in H8; eauto. inv H8. eauto.
-    * edestruct H0; eauto. unfold Mem.valid_block in *. xomega.
+    * edestruct H0; eauto. unfold Mem.valid_block in *. extlia.
 - econstructor; eauto.
 Qed.
 
@@ -1461,7 +1461,7 @@ Proof.
   econstructor; eauto.
   - intros. elim (tailcall_possible_reg _ H0 _ H1).
   - apply zero_size_arguments_tailcall_possible in H0.
-    pose proof (size_arguments_above sg). xomega.
+    pose proof (size_arguments_above sg). extlia.
 Qed.
 
 (** Typing properties of [match_stacks]. *)
@@ -1499,7 +1499,7 @@ Proof.
     eapply frame_get_outgoing; eauto 2.
     destruct (loc_arguments_acceptable_2 _ _ REG) as [? ?].
     unfold slot_valid, proj_sumbool.
-    rewrite zle_true by omega. rewrite pred_dec_true by auto. reflexivity.
+    rewrite zle_true by lia. rewrite pred_dec_true by auto. reflexivity.
 Qed.
 
 Lemma match_stacks_range_perm_args m j cs cs' sg sb sofs:
@@ -1512,17 +1512,17 @@ Proof.
   - destruct SEP as (? & PERM & ?).
     destruct H as [? | Hsg]; subst; auto.
     + destruct (zlt 0 (size_arguments (stk_sg w))).
-      * edestruct PERM as (sb' & sofs' & Hsp & PERM' & FITS). xomega.
+      * edestruct PERM as (sb' & sofs' & Hsp & PERM' & FITS). extlia.
         rewrite H4 in Hsp. inv Hsp. auto.
-      * intro. unfold offset_sarg. xomega. 
+      * intro. unfold offset_sarg. extlia. 
     + apply zero_size_arguments_tailcall_possible in Hsg.
-      unfold offset_sarg. intro. xomega.
+      unfold offset_sarg. intro. extlia.
   - eapply mconj_proj1, sep_proj1, sep_proj2, sep_proj1 in SEP. cbn in SEP.
     destruct SEP as (_ & ? & ? & PERM & _).
     intros ofs Hofs. unfold offset_sarg in Hofs.
     rewrite Ptrofs.add_zero_l, Ptrofs.unsigned_repr in Hofs.
-    + eapply PERM. xomega.
-    + unfold Ptrofs.max_unsigned. xomega.
+    + eapply PERM. extlia.
+    + unfold Ptrofs.max_unsigned. extlia.
 Qed.
 
 Lemma match_stacks_args_fit m j cs cs' sg ofs sb sofs:
@@ -1534,14 +1534,14 @@ Lemma match_stacks_args_fit m j cs cs' sg ofs sb sofs:
 Proof.
   intros MS SEP SP OFS. red. destruct MS; cbn in *; inv SP.
   - destruct H as [? | Hsg]; subst; auto.
-    + edestruct SEP as (? & HH & ?), HH as (sb' & sofs' & Hsp & PERM & FITS). xomega.
+    + edestruct SEP as (? & HH & ?), HH as (sb' & sofs' & Hsp & PERM & FITS). extlia.
       rewrite H4 in Hsp. inv Hsp. apply FITS; eauto.
-    + red in Hsg. xomega.
+    + red in Hsg. extlia.
   - eapply mconj_proj1, sep_proj1, sep_proj2, sep_proj1 in SEP. cbn in SEP.
-    unfold offset_sarg. (* split; try xomega. *)
+    unfold offset_sarg. (* split; try extlia. *)
     destruct SEP as (_ & ? & ? & _ & ?).
     rewrite !Ptrofs.add_zero_l, !Ptrofs.unsigned_repr;
-      unfold Ptrofs.max_unsigned; xomega.
+      unfold Ptrofs.max_unsigned; extlia.
 Qed.
 
 Lemma match_stacks_init_args j cs cs' sg m P:
@@ -1555,7 +1555,7 @@ Proof.
       decompose [and] SEP. repeat apply conj.
       * apply Mem.unchanged_on_refl.
       * destruct H; subst; auto.
-        apply zero_size_arguments_tailcall_possible in H. xomega.
+        apply zero_size_arguments_tailcall_possible in H. extlia.
       * destruct H; subst; auto.
         intros ? ? REG. apply tailcall_possible_reg in REG; auto. contradiction.
     + cbn. repeat apply conj.
@@ -1570,14 +1570,14 @@ Proof.
     destruct MS; cbn in *.
     + destruct H; subst; eauto.
       apply zero_size_arguments_tailcall_possible in H.
-      destruct Hofs. unfold offset_sarg in *. xomega.
+      destruct Hofs. unfold offset_sarg in *. extlia.
     + inv Hofs. unfold offset_sarg in *.
       eapply DISJ; eauto. left. left. right. left. split; eauto.
       cbn [m_footprint contains_locations function_bounds bound_outgoing].
       rewrite Ptrofs.add_zero_l, Ptrofs.unsigned_repr in H3.
-      * xomega.
+      * extlia.
       * eassert (H : m |= contains_locations _ _ fe_ofs_arg _ _ _) by apply SEP.
-        cbn in H. unfold Ptrofs.max_unsigned. xomega.
+        cbn in H. unfold Ptrofs.max_unsigned. extlia.
 Qed.
 
 (** * Syntactic properties of the translation *)
@@ -1955,7 +1955,7 @@ Proof.
     {
       unfold Mem.valid_block in Hb |- *.
       apply Mem.unchanged_on_nextblock in UNCH.
-      xomega.
+      extlia.
     }
     eauto.
 Qed.
@@ -2295,7 +2295,7 @@ Proof.
   rewrite (unfold_transf_function _ _ TRANSL). unfold fn_code. unfold transl_body.
   eexact D. traceEq.
   eapply match_states_intro with (j := j'); eauto with coqlib.
-  erewrite Mem.nextblock_alloc; eauto. xomega.
+  erewrite Mem.nextblock_alloc; eauto. extlia.
   eapply match_stacks_change_meminj; eauto.
   eapply stack_contents_nextblock; eauto. apply SEP'.
   rewrite sep_swap in SEP. rewrite sep_swap. eapply stack_contents_change_meminj; eauto.
@@ -2354,7 +2354,7 @@ Proof.
   rewrite Ptrofs.add_commut, <- Ptrofs.add_assoc, (Ptrofs.add_commut ofs ofs1).
   apply Mem.load_valid_access in Hv1.
   erewrite Mem.address_inject; eauto.
-  eapply Hv1. pose proof (size_chunk_pos (chunk_of_type ty)). xomega.
+  eapply Hv1. pose proof (size_chunk_pos (chunk_of_type ty)). extlia.
 Qed.
 
 Lemma init_args_initial_regs sg j ls m sp:
