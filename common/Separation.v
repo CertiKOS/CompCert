@@ -654,7 +654,7 @@ Proof.
   destruct SEP as (A & B & C). simpl in A.
   split; [|split].
   - exact INJ'.
-  - apply m_invar with (m0 := m2).
+  - apply (m_invar _ m2).
     + assumption.
     + eapply Mem.unchanged_on_implies; eauto.
       intros; red; intros; red; intros.

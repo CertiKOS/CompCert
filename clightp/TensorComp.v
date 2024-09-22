@@ -654,16 +654,16 @@ Section MAP_NORMALIZE.
     fq G q1 = q2 -> mn_ms (st1 1 _ (st_q q1)) (st1 1 _ (st_q q2))
   | mn_ms2 q1 q2 s:
     fq G q1 = q2 ->
-    mn_ms (st2 1 ((semantics_map L F G) o 1) (st_q q1) (st1 (semantics_map L F G) _ s))
-          (st2 1 (L o 1) (st_q q2) (st1 L _ s))
+    mn_ms (st2 1 ((semantics_map L F G) ∘) (st_q q1) (st1 (semantics_map L F G) _ s))
+          (st2 1 (L ∘) (st_q q2) (st1 L _ s))
   | mn_ms3 q1 q2 s q3 q4:
     fq G q1 = q2 -> fq F q3 = q4 ->
-    mn_ms (st2 1 ((semantics_map L F G) o 1) (st_q q1) (st2 (semantics_map L F G) 1 s (st_q q3)))
-          (st2 1 (L o 1) (st_q q2) (st2 L 1 s (st_q q4)))
+    mn_ms (st2 1 ((semantics_map L F G) ∘) (st_q q1) (st2 (semantics_map L F G) 1 s (st_q q3)))
+          (st2 1 (L ∘) (st_q q2) (st2 L 1 s (st_q q4)))
   | mn_ms4 q1 q2 s r1 r2:
     fq G q1 = q2 -> fr F r2 = r1 ->
-    mn_ms (st2 1 ((semantics_map L F G) o 1) (st_q q1) (st2 (semantics_map L F G) 1 s (st_r r1)))
-          (st2 1 (L o 1) (st_q q2) (st2 L 1 s (st_r r2)))
+    mn_ms (st2 1 ((semantics_map L F G) ∘) (st_q q1) (st2 (semantics_map L F G) 1 s (st_r r1)))
+          (st2 1 (L ∘) (st_q q2) (st2 L 1 s (st_r r2)))
   | mn_ms5 r1 r2:
     fr G r2 = r1 -> mn_ms (st1 1 _ (st_r r1)) (st1 1 _ (st_r r2)).
 

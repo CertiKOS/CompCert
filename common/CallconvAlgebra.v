@@ -318,7 +318,8 @@ Section JOIN.
 
   (** Trivial consequences of the least upper bound property. *)
 
-  Hint Resolve cc_join_lub cc_join_l cc_join_r (reflexivity (R:=ccref)) : core.
+  Hint Resolve cc_join_lub cc_join_l cc_join_r : core.
+  Hint Resolve (fun li1 li2 => reflexivity (R := @ccref li1 li2)) : core.
   Hint Unfold cceqv : core.
 
   Global Instance cc_join_ref:
@@ -428,7 +429,7 @@ Infix "+" := cc_join : cc_scope.
 
 Create HintDb cc.
 Hint Resolve cc_join_ub_l cc_join_ub_r cc_join_l cc_join_r : cc.
-Hint Resolve (reflexivity (R := ccref)) : cc.
+Hint Resolve (fun li1 li2 => reflexivity (R := @ccref li1 li2)) : cc.
 
 (** ** Superposition *)
 

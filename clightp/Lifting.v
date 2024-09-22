@@ -211,11 +211,11 @@ Section HCOMP_LIFT.
           constructor; eauto.
         * econstructor. eauto.
       + inv Hs. subst_dep. eexists; split.
-        * eapply step_push with (q0 := (_, _)) (j0 := j) (s'0 := (_, _));
+        * eapply step_push with (q := (_, _)) (j := j) (s' := (_, _));
             [ constructor | | constructor]; cbn; eauto.
         * repeat econstructor. eauto.
       + inv Hs. subst_dep. inv H6. subst_dep. eexists; split.
-        * eapply step_pop with (r0 := (_, _)) (s'0 := (_, _));
+        * eapply step_pop with (r := (_, _)) (s' := (_, _));
             constructor; cbn; eauto.
         * econstructor. eauto.
     - apply well_founded_ltof.

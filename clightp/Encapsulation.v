@@ -1060,19 +1060,19 @@ Section CAT_SIM.
   Qed.
 
   Lemma st_fsim_left_unit1 `(L: semantics liA liB):
-    STCAT.forward_simulation &1 &1 L (1 o L).
+    STCAT.forward_simulation &1 &1 L (∘ L).
   Proof. apply fsim_embed. apply CAT.left_unit_1. Qed.
 
   Lemma st_fsim_left_unit2 `(L: semantics liA liB):
-    STCAT.forward_simulation &1 &1 (1 o L) L.
+    STCAT.forward_simulation &1 &1 (∘ L) L.
   Proof. apply fsim_embed. apply CAT.left_unit_2. Qed.
 
   Lemma st_fsim_right_unit1 `(L: semantics liA liB):
-    STCAT.forward_simulation &1 &1 L (L o 1).
+    STCAT.forward_simulation &1 &1 L (L ∘).
   Proof. apply fsim_embed. apply CAT.right_unit_1. Qed.
 
   Lemma st_fsim_right_unit2 `(L: semantics liA liB):
-    STCAT.forward_simulation &1 &1 (L o 1) L.
+    STCAT.forward_simulation &1 &1 (L ∘) L.
   Proof. apply fsim_embed. apply CAT.right_unit_2. Qed.
 
   Section CC_UNIT.
@@ -1505,13 +1505,13 @@ Proof.
   exploit @st_cat_fsim_lcomp_sk. exact HB. exact HC.
   apply CategoricalComp.id_skel_order. apply Linking.linkorder_refl.
   cbn. intros X. rewrite Hsk in X at 3 4. clear -X.
-  assert (Y: STCAT.forward_simulation &1 &1 L1 (1 o L1 o 1)).
+  assert (Y: STCAT.forward_simulation &1 &1 L1 (∘ L1 ∘)).
   {
     exploit @st_fsim_vcomp.
     apply st_fsim_right_unit1. apply st_fsim_left_unit1.
     apply cc_left_unit.
   }
-  assert (Z: STCAT.forward_simulation &1 &1 (1 o L2 o 1) L2).
+  assert (Z: STCAT.forward_simulation &1 &1 (∘ L2 ∘) L2).
   {
     exploit @st_fsim_vcomp.
     apply st_fsim_left_unit2. apply st_fsim_right_unit2.

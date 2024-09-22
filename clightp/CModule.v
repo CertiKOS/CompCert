@@ -17,7 +17,6 @@ From compcert.common Require Import
      FlatComp.
 From compcert.cfrontend Require Import
      Clight Ctypes.
-Require Coq.omega.Omega.
 
 (* A module is a list of compilation units. Specifically, they are Clight
    programs at this time. Note that in the layer library the modules are

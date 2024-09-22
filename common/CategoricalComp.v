@@ -486,11 +486,11 @@ Section ID_SEM.
 
 End ID_SEM.
 
-Notation "L 'o' 1" := (right_comp_id L) (at level 15).
-Notation "1 'o' L" := (left_comp_id L) (at level 20).
+Notation "L ∘" := (right_comp_id L) (at level 15).
+Notation "∘ L" := (left_comp_id L) (at level 20).
 (* Notation "1 [ L ]" := (id_semantics (id_skel L)). *)
 Notation "1" := (id_semantics id_skel) : lts_scope.
-Definition normalize_sem {liA liB} (L: semantics liA liB) := 1 o L o 1.
+Definition normalize_sem {liA liB} (L: semantics liA liB) := (∘ L ∘).
 
 (* TODO: maybe we need to use CAT.fsim to define E.fsim *)
 
@@ -524,18 +524,18 @@ Module CAT.
     Context {liA liB} (L: semantics liA liB).
 
     (* TODO: notations like (st4 _ _ _ _ s1 s2 s3 s4) *)
-    Inductive lu_ms: state (1 o L o 1) -> state (1 o (1 o L o 1)) -> Prop :=
+    Inductive lu_ms: state (∘ L ∘) -> state (∘ (∘ L ∘)) -> Prop :=
     | lu_ms1 q:
       lu_ms (st1 1 _ (st_q q)) (st1 1 _ (st_q q))
     | lu_ms2 q s:
-      lu_ms (st2 1 (L o 1) (st_q q) (st1 L _ s))
-            (st2 1 (1 o L o 1) (st_q q) (st2 1 (L o 1) (st_q q) (st1 L _ s)))
+      lu_ms (st2 1 (L ∘) (st_q q) (st1 L _ s))
+            (st2 1 (∘ L ∘) (st_q q) (st2 1 (L ∘) (st_q q) (st1 L _ s)))
     | lu_ms3 qi s qo:
-      lu_ms (st2 1 (L o 1) (st_q qi) (st2 L 1 s (st_q qo)))
-            (st2 1 (1 o L o 1) (st_q qi) (st2 1 (L o 1) (st_q qi) (st2 L 1 s (st_q qo))))
+      lu_ms (st2 1 (L ∘) (st_q qi) (st2 L 1 s (st_q qo)))
+            (st2 1 (∘ L ∘) (st_q qi) (st2 1 (L ∘) (st_q qi) (st2 L 1 s (st_q qo))))
     | lu_ms4 qi s ro:
-      lu_ms (st2 1 (L o 1) (st_q qi) (st2 L 1 s (st_r ro)))
-            (st2 1 (1 o L o 1) (st_q qi) (st2 1 (L o 1) (st_q qi) (st2 L 1 s (st_r ro))))
+      lu_ms (st2 1 (L ∘) (st_q qi) (st2 L 1 s (st_r ro)))
+            (st2 1 (∘ L ∘) (st_q qi) (st2 1 (L ∘) (st_q qi) (st2 L 1 s (st_r ro))))
     | lu_ms5 r:
       lu_ms (st1 1 _ (st_r r)) (st1 1 _ (st_r r)).
 
@@ -544,7 +544,7 @@ Module CAT.
     Lemma left_unit_1: forward_simulation 1 1 L (left_comp_id L).
     Proof.
       unfold forward_simulation, normalize_sem.
-      etransitivity. instantiate (1 := 1 o (1 o L o 1)).
+      etransitivity. instantiate (1 := ∘ (∘ L ∘)).
       2: {
         eapply categorical_compose_simulation'.
         reflexivity. apply assoc1.
@@ -585,7 +585,7 @@ Module CAT.
         + inv HSTEP; repeat (inv_comp || inv_id).
     Qed.
 
-    Definition ul_measure (s: state (1 o (1 o L o 1))) :=
+    Definition ul_measure (s: state (∘ (∘ L ∘))) :=
       match s with
       | st1 (st_q _) => 1%nat
       | st2 (st_q _) (st1 (st_q _)) => 0%nat
@@ -593,30 +593,30 @@ Module CAT.
       | st1 (st_r _) => 0%nat
       | _ => 0%nat
       end.
-    Inductive ul_ms: state (1 o (1 o L o 1)) -> state (1 o L o 1) -> Prop :=
+    Inductive ul_ms: state (∘ (∘ L ∘)) -> state (∘ L ∘) -> Prop :=
     | ul_ms1 q:
       ul_ms (st1 1 _ (st_q q)) (st1 1 _ (st_q q))
     | ul_ms1' q:
-      ul_ms (st2 1 (1 o L o 1) (st_q q) (st1 1 _ (st_q q))) (st1 1 _ (st_q q))
+      ul_ms (st2 1 (∘ L ∘) (st_q q) (st1 1 _ (st_q q))) (st1 1 _ (st_q q))
     | ul_ms2 q s:
-      ul_ms (st2 1 (1 o L o 1) (st_q q) (st2 1 (L o 1) (st_q q) (st1 L _ s)))
-            (st2 1 (L o 1) (st_q q) (st1 L _ s))
+      ul_ms (st2 1 (∘ L ∘) (st_q q) (st2 1 (L ∘) (st_q q) (st1 L _ s)))
+            (st2 1 (L ∘) (st_q q) (st1 L _ s))
     | ul_ms3 qi s qo:
-      ul_ms (st2 1 (1 o L o 1) (st_q qi) (st2 1 (L o 1) (st_q qi) (st2 L 1 s (st_q qo))))
-             (st2 1 (L o 1) (st_q qi) (st2 L 1 s (st_q qo)))
+      ul_ms (st2 1 (∘ L ∘) (st_q qi) (st2 1 (L ∘) (st_q qi) (st2 L 1 s (st_q qo))))
+             (st2 1 (L ∘) (st_q qi) (st2 L 1 s (st_q qo)))
     | ul_ms4 qi s ro:
-      ul_ms (st2 1 (1 o L o 1) (st_q qi) (st2 1 (L o 1) (st_q qi) (st2 L 1 s (st_r ro))))
-            (st2 1 (L o 1) (st_q qi) (st2 L 1 s (st_r ro)))
+      ul_ms (st2 1 (∘ L ∘) (st_q qi) (st2 1 (L ∘) (st_q qi) (st2 L 1 s (st_r ro))))
+            (st2 1 (L ∘) (st_q qi) (st2 L 1 s (st_r ro)))
     | ul_ms5 r:
       ul_ms (st1 1 _ (st_r r)) (st1 1 _ (st_r r))
     | ul_ms5' q r:
-      ul_ms (st2 1 (1 o L o 1) (st_q q) (st1 1 _ (st_r r))) (st1 1 _ (st_r r)).
+      ul_ms (st2 1 (∘ L ∘) (st_q q) (st1 1 _ (st_r r))) (st1 1 _ (st_r r)).
     Hint Constructors ul_ms: ccomp.
 
     Lemma left_unit_2: forward_simulation 1 1 (left_comp_id L) L.
     Proof with (eauto with ccomp).
       unfold forward_simulation, normalize_sem.
-      etransitivity. instantiate (1 := 1 o (1 o L o 1)).
+      etransitivity. instantiate (1 := ∘ (∘ L ∘)).
       {
         eapply categorical_compose_simulation'.
         reflexivity. apply assoc2.
@@ -655,18 +655,18 @@ Module CAT.
           right. cbn. repeat split; eauto...
     Qed.
 
-    Inductive ru_ms: state (1 o L o 1) -> state (1 o (L o 1) o 1) -> Prop :=
+    Inductive ru_ms: state (∘ L ∘) -> state (∘ (L ∘) ∘) -> Prop :=
     | ru_ms1 q:
       ru_ms (st1 1 _ (st_q q)) (st1 1 _ (st_q q))
     | ru_ms2 q s:
-      ru_ms (st2 1 (L o 1) (st_q q) (st1 L _ s))
-            (st2 1 ((L o 1) o 1) (st_q q) (st1 (L o 1) _ (st1 L _ s)))
+      ru_ms (st2 1 (L ∘) (st_q q) (st1 L _ s))
+            (st2 1 ((L ∘) ∘) (st_q q) (st1 (L ∘) _ (st1 L _ s)))
     | ru_ms3 qi s qo:
-      ru_ms (st2 1 (L o 1) (st_q qi) (st2 L 1 s (st_q qo)))
-            (st2 1 ((L o 1) o 1) (st_q qi) (st2 (L o 1) 1 (st2 L 1 s (st_q qo)) (st_q qo)))
+      ru_ms (st2 1 (L ∘) (st_q qi) (st2 L 1 s (st_q qo)))
+            (st2 1 ((L ∘) ∘) (st_q qi) (st2 (L ∘) 1 (st2 L 1 s (st_q qo)) (st_q qo)))
     | ru_ms4 qi s qo ro:
-      ru_ms (st2 1 (L o 1) (st_q qi) (st2 L 1 s (st_r ro)))
-            (st2 1 ((L o 1) o 1) (st_q qi) (st2 (L o 1) 1 (st2 L 1 s (st_q qo)) (st_r ro)))
+      ru_ms (st2 1 (L ∘) (st_q qi) (st2 L 1 s (st_r ro)))
+            (st2 1 ((L ∘) ∘) (st_q qi) (st2 (L ∘) 1 (st2 L 1 s (st_q qo)) (st_r ro)))
     | ru_ms5 r:
       ru_ms (st1 1 _ (st_r r)) (st1 1 _ (st_r r)).
     Hint Constructors ru_ms: ccomp.
@@ -706,30 +706,30 @@ Module CAT.
         + inv HSTEP; repeat (inv_comp || inv_id).
     Qed.
 
-    Definition ur_measure (s: state (1 o (L o 1) o 1)) :=
+    Definition ur_measure (s: state (∘ (L ∘) ∘)) :=
       match s with
       | st2 (st_q qi) (st1 (st2 s (st_q qo))) => 1%nat
       | st2 (st_q qi) (st2 (st2 s (st_q qo)) (st_r ro)) => 1%nat
       | _ => 0%nat
       end.
-    Inductive ur_ms: state (1 o (L o 1) o 1) -> state (1 o L o 1) -> Prop :=
+    Inductive ur_ms: state (∘ (L ∘) ∘) -> state (∘ L ∘) -> Prop :=
     | ur_ms1 q:
       ur_ms (st1 1 _ (st_q q)) (st1 1 _ (st_q q))
     | ur_ms2 q s:
-      ur_ms (st2 1 ((L o 1) o 1) (st_q q) (st1 (L o 1) _ (st1 L _ s)))
-            (st2 1 (L o 1) (st_q q) (st1 L _ s))
+      ur_ms (st2 1 ((L ∘) ∘) (st_q q) (st1 (L ∘) _ (st1 L _ s)))
+            (st2 1 (L ∘) (st_q q) (st1 L _ s))
     | ur_ms3 qi s qo:
-      ur_ms (st2 1 ((L o 1) o 1) (st_q qi) (st2 (L o 1) 1 (st2 L 1 s (st_q qo)) (st_q qo)))
-            (st2 1 (L o 1) (st_q qi) (st2 L 1 s (st_q qo)))
+      ur_ms (st2 1 ((L ∘) ∘) (st_q qi) (st2 (L ∘) 1 (st2 L 1 s (st_q qo)) (st_q qo)))
+            (st2 1 (L ∘) (st_q qi) (st2 L 1 s (st_q qo)))
     | ur_ms3' qi s qo:
-      ur_ms (st2 1 ((L o 1) o 1) (st_q qi) (st1 (L o 1) _ (st2 L 1 s (st_q qo))))
-            (st2 1 (L o 1) (st_q qi) (st2 L 1 s (st_q qo)))
+      ur_ms (st2 1 ((L ∘) ∘) (st_q qi) (st1 (L ∘) _ (st2 L 1 s (st_q qo))))
+            (st2 1 (L ∘) (st_q qi) (st2 L 1 s (st_q qo)))
     | ur_ms4 qi s qo ro:
-      ur_ms (st2 1 ((L o 1) o 1) (st_q qi) (st2 (L o 1) 1 (st2 L 1 s (st_q qo)) (st_r ro)))
-            (st2 1 (L o 1) (st_q qi) (st2 L 1 s (st_r ro)))
+      ur_ms (st2 1 ((L ∘) ∘) (st_q qi) (st2 (L ∘) 1 (st2 L 1 s (st_q qo)) (st_r ro)))
+            (st2 1 (L ∘) (st_q qi) (st2 L 1 s (st_r ro)))
     | ur_ms4' qi s ro:
-      ur_ms (st2 1 ((L o 1) o 1) (st_q qi) (st1 (L o 1) _ (st2 L 1 s (st_r ro))))
-            (st2 1 (L o 1) (st_q qi) (st2 L 1 s (st_r ro)))
+      ur_ms (st2 1 ((L ∘) ∘) (st_q qi) (st1 (L ∘) _ (st2 L 1 s (st_r ro))))
+            (st2 1 (L ∘) (st_q qi) (st2 L 1 s (st_r ro)))
     | ur_ms5 r:
       ur_ms (st1 1 _ (st_r r)) (st1 1 _ (st_r r)).
     Hint Constructors ur_ms: ccomp.
@@ -1024,18 +1024,18 @@ Section NORMALIZE_COMP.
   Variable sk: AST.program unit unit.
 
   Inductive nc_ms: state (comp_semantics' L1 L2 sk) ->
-                   state (comp_semantics' (L1 o 1) (1 o L2) sk) -> Prop :=
+                   state (comp_semantics' (L1 ∘) (∘ L2) sk) -> Prop :=
   | nc_ms1 s:
     nc_ms (st1 L1 _ s)
-          (st1 (L1 o 1) _ (st1 L1 _ s))
+          (st1 (L1 ∘) _ (st1 L1 _ s))
   | nc_ms2 s1 s2 q:
     nc_ms (st2 L1 L2 s1 s2)
-          (st2 (L1 o 1) (1 o L2) (st2 L1 1 s1 (st_q q)) (st2 1 L2 (st_q q) s2)).
+          (st2 (L1 ∘) (∘ L2) (st2 L1 1 s1 (st_q q)) (st2 1 L2 (st_q q) s2)).
   Hint Constructors nc_ms: ccomp.
 
   Lemma normalize_comp_fsim_sk1':
     forward_simulation 1 1 (comp_semantics' L1 L2 sk)
-                       (comp_semantics' (L1 o 1) (1 o L2) sk).
+                       (comp_semantics' (L1 ∘) (∘ L2) sk).
   Proof with (eauto with ccomp).
     constructor.
     eapply Forward_simulation with
@@ -1090,7 +1090,7 @@ Section NORMALIZE_COMP.
     Unshelve. apply sk.
   Qed.
 
-  Definition cn_measure (s: state (comp_semantics' (L1 o 1) (1 o L2) sk)) :=
+  Definition cn_measure (s: state (comp_semantics' (L1 ∘) (∘ L2) sk)) :=
     match s with
     | st1 (st1 s) => 3%nat
     | st1 (st2 s (st_q _)) => 2%nat
@@ -1100,34 +1100,34 @@ Section NORMALIZE_COMP.
     | st1 (st2 s (st_r _)) => 4%nat
     | _ => 0%nat
     end.
-  Inductive cn_ms se: state (comp_semantics' (L1 o 1) (1 o L2) sk) ->
+  Inductive cn_ms se: state (comp_semantics' (L1 ∘) (∘ L2) sk) ->
                       state (comp_semantics' L1 L2 sk) -> Prop :=
   | cn_ms1 s:
-    cn_ms se (st1 (L1 o 1) _ (st1 L1 _ s))
+    cn_ms se (st1 (L1 ∘) _ (st1 L1 _ s))
           (st1 L1 _ s)
   | cn_ms2 s1 s2 q:
-    cn_ms se (st2 (L1 o 1) (1 o L2) (st2 L1 1 s1 (st_q q)) (st2 1 L2 (st_q q) s2))
+    cn_ms se (st2 (L1 ∘) (∘ L2) (st2 L1 1 s1 (st_q q)) (st2 1 L2 (st_q q) s2))
           (st2 L1 L2 s1 s2)
   | cn_ms3 s q:
     at_external (L1 se) s q ->
-    cn_ms se (st1 (L1 o 1) _ (st2 L1 1 s (st_q q)))
+    cn_ms se (st1 (L1 ∘) _ (st2 L1 1 s (st_q q)))
           (st1 L1 _ s)
   | cn_ms4 s q:
     at_external (L1 se) s q ->
-    cn_ms se (st2 (L1 o 1) (1 o L2) (st2 L1 1 s (st_q q)) (st1 1 _ (st_q q)))
+    cn_ms se (st2 (L1 ∘) (∘ L2) (st2 L1 1 s (st_q q)) (st1 1 _ (st_q q)))
           (st1 L1 _ s)
   | cn_ms5 s1 s2 q r:
     final_state (L2 se) s2 r ->
-    cn_ms se (st2 (L1 o 1) (1 o L2) (st2 L1 1 s1 (st_q q)) (st1 1 _ (st_r r)))
+    cn_ms se (st2 (L1 ∘) (∘ L2) (st2 L1 1 s1 (st_q q)) (st1 1 _ (st_r r)))
           (st2 L1 L2 s1 s2)
   | cn_ms6 s1 s2 r:
     final_state (L2 se) s2 r ->
-    cn_ms se (st1 (L1 o 1) _ (st2 L1 1 s1 (st_r r)))
+    cn_ms se (st1 (L1 ∘) _ (st2 L1 1 s1 (st_r r)))
           (st2 L1 L2 s1 s2).
   Hint Constructors cn_ms: ccomp.
 
   Lemma normalize_comp_fsim_sk2':
-    forward_simulation 1 1 (comp_semantics' (L1 o 1) (1 o L2) sk)
+    forward_simulation 1 1 (comp_semantics' (L1 ∘) (∘ L2) sk)
                        (comp_semantics' L1 L2 sk).
   Proof with (eauto with ccomp).
     constructor.

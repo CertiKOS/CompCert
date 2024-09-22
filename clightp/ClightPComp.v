@@ -19,7 +19,7 @@ Section LEFT_UNIT.
   Definition left_comp_id' :=
     comp_semantics' (id_semantics (skel L)) L (skel L).
 
-  Inductive lc_ms: state left_comp_id' -> state (1 o L) -> Prop :=
+  Inductive lc_ms: state left_comp_id' -> state (∘ L) -> Prop :=
   | lc_ms_q q:
     lc_ms (st1 (id_semantics (skel L)) _ (st_q q)) (st1 1%lts _ (st_q q))
   | lc_ms_s q s:
@@ -29,7 +29,7 @@ Section LEFT_UNIT.
   Hint Constructors lc_ms.
 
   Lemma left_unit_sk_irrelevent_1:
-    forward_simulation 1 1 left_comp_id' (1 o L).
+    forward_simulation 1 1 left_comp_id' (∘ L).
   Proof.
     constructor. econstructor. reflexivity. firstorder.
     intros. inv H.
@@ -52,7 +52,7 @@ Section LEFT_UNIT.
   Qed.
 
   Lemma left_unit_sk_irrelevent_2:
-    forward_simulation 1 1 (1 o L) left_comp_id'.
+    forward_simulation 1 1 (∘ L) left_comp_id'.
   Proof.
     constructor. econstructor. reflexivity. firstorder.
     intros. inv H.
@@ -79,7 +79,7 @@ Section LEFT_UNIT.
     CAT.forward_simulation 1 1 L left_comp_id'.
   Proof.
     unfold CAT.forward_simulation, normalize_sem.
-    etransitivity. instantiate (1 := 1 o left_comp_id L o 1).
+    etransitivity. instantiate (1 := ∘ left_comp_id L ∘).
     apply CAT.left_unit_1.
     eapply categorical_compose_simulation'.
     - reflexivity.
@@ -96,7 +96,7 @@ Section LEFT_UNIT.
     CAT.forward_simulation 1 1 left_comp_id' L.
   Proof.
     unfold CAT.forward_simulation, normalize_sem.
-    etransitivity. instantiate (1 := 1 o left_comp_id L o 1).
+    etransitivity. instantiate (1 := ∘ left_comp_id L ∘).
     2: { apply CAT.left_unit_2. }
     eapply categorical_compose_simulation'.
     - reflexivity.
