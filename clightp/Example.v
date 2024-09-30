@@ -483,26 +483,26 @@ Section RB_LTS.
   Variable ge:  genv.
 
   Inductive rb_initial_state: c_query * rb_state -> rb_internal_state -> Prop :=
-  | initial_state_inc1: forall vf b m rbst sig,
+  | initial_state_inc1: forall vf b m rbst sig (HFLAG: Mem.alloc_flag m = true),
       vf = Vptr b Integers.Ptrofs.zero ->
       Genv.find_symbol ge inc1_id = Some b ->
       Ple (Genv.genv_next ge) (Mem.nextblock m) ->
       sig = inc1_sg ->
       rb_initial_state (cq vf sig nil m, rbst) (rb_init inc1 rbst nil m)
-  | initial_state_inc2: forall vf b m rbst sig,
+  | initial_state_inc2: forall vf b m rbst sig (HFLAG: Mem.alloc_flag m = true),
       vf = Vptr b Integers.Ptrofs.zero ->
       Genv.find_symbol ge inc2_id = Some b ->
       Ple (Genv.genv_next ge) (Mem.nextblock m) ->
       sig = inc2_sg ->
       rb_initial_state (cq vf sig nil m, rbst) (rb_init inc2 rbst nil m)
-  | initial_state_geti: forall vf b v m rbst sig,
+  | initial_state_geti: forall vf b v m rbst sig (HFLAG: Mem.alloc_flag m = true),
       vf = Vptr b Integers.Ptrofs.zero ->
       Genv.find_symbol ge get_id = Some b ->
       Ple (Genv.genv_next ge) (Mem.nextblock m) ->
       Cop.val_casted v tint ->
       sig = get_sg ->
       rb_initial_state (cq vf sig [v] m, rbst) (rb_init geti rbst [v] m)
-  | initial_state_seti: forall vf b m rbst sig vargs v1 v2,
+  | initial_state_seti: forall vf b m rbst sig vargs v1 v2 (HFLAG: Mem.alloc_flag m = true),
       vf = Vptr b Integers.Ptrofs.zero ->
       Genv.find_symbol ge set_id = Some b ->
       Ple (Genv.genv_next ge) (Mem.nextblock m) ->
@@ -585,17 +585,11 @@ Inductive rb_penv_rel: rb_state -> penv -> Prop :=
   rb_penv_rel (f, c1, c2) pe.
 
 Inductive rb_query: c_query * rb_state -> c_query * penv -> Prop :=
-| rb_query_intro vf sg vargs m rbst pe
-    (HFLAG: Mem.alloc_flag m = true)
-    (HPE: rb_penv_rel rbst pe):
-  rb_query (cq vf sg vargs m, rbst) (cq vf sg vargs m, pe).
-
+| rb_query_intro q rbst pe (HPE: rb_penv_rel rbst pe):
+  rb_query (q, rbst) (q, pe).
 Inductive rb_reply: c_reply * rb_state -> c_reply * penv -> Prop :=
-| rb_reply_intro rv m rbst pe
-    (HFLAG: Mem.alloc_flag m = true)
-    (HPE: rb_penv_rel rbst pe):
-  rb_reply (cr rv m, rbst) (cr rv m, pe).
-
+| rb_reply_intro r rbst pe (HPE: rb_penv_rel rbst pe):
+  rb_reply (r, rbst) (r, pe).
 Program Definition rb_cc: callconv (li_c@rb_state) (li_c@penv) :=
   {|
     ccworld := unit;
@@ -607,17 +601,6 @@ Next Obligation. reflexivity. Qed.
 Next Obligation. inv H0. reflexivity. Qed.
 Next Obligation. inv H. reflexivity. Qed.
 
-Program Definition flag_cc: callconv li_c li_c :=
-  {|
-    ccworld := unit;
-    match_senv _ := eq;
-    match_query _ q1 q2 := q1 = q2 /\ query_alloc_flag q1 = true;
-    match_reply _ r1 r2 := r1 = r2 /\ reply_alloc_flag r1 = true;
-  |}.
-Next Obligation. reflexivity. Qed.
-Next Obligation. reflexivity. Qed.
-Next Obligation. reflexivity. Qed.
-
 Section RB.
 
   Definition rb_pset := penv_pset (ClightPComp.vars_of_program rb_program).
@@ -626,18 +609,16 @@ Section RB.
     Smallstep.state (encap_prim rb_state (skel rb_spec)) ->
     Smallstep.state (@encap_prim _ penv rb_pset (skel rb_spec)) -> Prop :=
   | rb_penv_ms_q q rbst pe:
-    query_alloc_flag q = true ->
     rb_penv_rel rbst pe ->
     rb_penv_ms (@st_q (li_c@rb_state)  (q, rbst)) (@st_q (li_c@penv) (q, pe))
   | rb_penv_ms_r r rbst pe:
-    reply_alloc_flag r = true ->
     rb_penv_rel rbst pe ->
     rb_penv_ms (@st_r (li_c@rb_state) (r, rbst)) (@st_r (li_c@penv) (r, pe)).
 
   Hint Constructors rb_penv_ms.
 
   Lemma rb_correct1:
-    E.forward_simulation (&rb_cc) (&flag_cc)
+    E.forward_simulation (&rb_cc) (&1)
       (encap_prim rb_state (skel rb_spec))
       (@encap_prim _ penv rb_pset (skel rb_spec)).
   Proof.
@@ -661,7 +642,6 @@ Section RB.
         eexists (tt, (_, _)). repeat split; eauto.
       + inv H2. inv H. eexists (_, _). split. constructor.
         eexists tt, tt. repeat split; eauto.
-        destruct c. constructor; eauto.
         eexists. split. constructor. inv H3.
         eexists tt, (tt, (_, _)). repeat split; eauto.
         inv H2. econstructor; eauto.
@@ -884,7 +864,7 @@ Proof.
 Qed.
 
 Lemma rb_correct:
-  E.forward_simulation (&1) (&flag_cc) rb_espec (eclightp rb_program).
+  E.forward_simulation (&1) (&1) rb_espec (eclightp rb_program).
 Proof.
   eapply encap_fsim_lcomp_sk; eauto. instantiate (1 := &rb_cc).
   - apply rb_correct1.
@@ -910,14 +890,14 @@ Section RB_LTS.
   Variable ge:  genv.
 
   Inductive bq_initial_state: c_query -> bq_internal_state -> Prop :=
-  | initial_state_enq: forall vf b v m  sig,
+  | initial_state_enq: forall vf b v m  sig (HFLAG: Mem.alloc_flag m = true),
       vf = Vptr b Integers.Ptrofs.zero ->
       Genv.find_symbol ge enq_id = Some b ->
       Ple (Genv.genv_next ge) (Mem.nextblock m) ->
       Cop.val_casted v tint ->
       sig = enq_sg ->
       bq_initial_state (cq vf sig [v] m) (bq_init enq [v] m)
-  | initial_state_deq: forall vf b m  sig,
+  | initial_state_deq: forall vf b m  sig (HFLAG: Mem.alloc_flag m = true),
       vf = Vptr b Integers.Ptrofs.zero ->
       Genv.find_symbol ge deq_id = Some b ->
       Ple (Genv.genv_next ge) (Mem.nextblock m) ->
@@ -1001,8 +981,8 @@ Program Definition bq_cc: callconv li_c (li_c@penv) :=
   {|
     ccworld := unit;
     match_senv _ := eq;
-    match_query _ q1 '(q2, _) := q1 = q2 /\ query_alloc_flag q1 = true;
-    match_reply _ r1 '(r2, _) := r1 = r2 /\ reply_alloc_flag r1 = true;
+    match_query _ q1 '(q2, _) := q1 = q2;
+    match_reply _ r1 '(r2, _) := r1 = r2;
   |}.
 Next Obligation. reflexivity. Qed.
 Next Obligation. reflexivity. Qed.
@@ -1016,16 +996,14 @@ Section BQ.
     @Smallstep.state li_c _ (semantics_embed (id_semantics (skel bq_spec))) ->
     Smallstep.state (@encap_prim _ penv bq_pset (skel bq_spec)) -> Prop :=
   | bq_penv_ms_q q pe:
-    query_alloc_flag q = true ->
     bq_penv_ms (st_q q) (@st_q (li_c@penv) (q, pe))
   | bq_penv_ms_r r pe:
-    reply_alloc_flag r = true ->
     bq_penv_ms (st_r r) (@st_r (li_c@penv) (r, pe)).
 
   Hint Constructors bq_penv_ms.
 
   Lemma bq_correct1:
-    E.forward_simulation (&bq_cc) (&flag_cc)
+    E.forward_simulation (&bq_cc) (&1)
       (semantics_embed (id_semantics (skel bq_spec)))
       (@encap_prim _ penv bq_pset (skel bq_spec)).
   Proof.
@@ -1042,7 +1020,7 @@ Section BQ.
       eexists (tt, (tt, _)). repeat split; eauto.
     - inv H3. inv H2. eexists (_, _). split. econstructor.
       exists tt, tt. repeat split; eauto.
-      eprod_crush. inv H6.
+      eprod_crush. inv H3.
       eexists. split. constructor.
       eexists tt, (tt, (tt, _)). repeat split; eauto.
     - easy.
@@ -1241,7 +1219,7 @@ Inductive bq_ms se: bq_internal_state -> state * penv -> Prop :=
     exists b. split; eauto. eapply genv_funct_symbol; eauto.
   Qed.
 
-Lemma bq_correct2: forward_simulation flag_cc bq_cc bq_spec (clightp2 bq_program).
+Lemma bq_correct2: forward_simulation 1 bq_cc bq_spec (clightp2 bq_program).
 Proof.
   constructor. econstructor. reflexivity. firstorder.
   intros. instantiate (1 := fun _ _ _ => _). cbn beta.
@@ -1356,7 +1334,7 @@ Qed.
 
 Definition bq_espec: li_c +-> li_c := semantics_embed bq_spec.
 
-Lemma bq_correct: E.forward_simulation (&flag_cc) (&flag_cc) bq_espec (eclightp bq_program).
+Lemma bq_correct: E.forward_simulation (&1) (&1) bq_espec (eclightp bq_program).
 Proof.
   rewrite ccref_left_unit1 at 2.
   rewrite <- ccref_left_unit2 at 1.
@@ -1395,14 +1373,14 @@ Section BQ_LTS.
   Variable ge:  genv.
 
   Inductive bq_abs_initial_state: c_query * bq_state -> bq_abs_state -> Prop :=
-  | abs_initial_state_enq: forall vf b v m bqst sig,
+  | abs_initial_state_enq: forall vf b v m bqst sig (HFLAG: Mem.alloc_flag m = true),
       vf = Vptr b Integers.Ptrofs.zero ->
       Genv.find_symbol ge enq_id = Some b ->
       Ple (Genv.genv_next ge) (Mem.nextblock m) ->
       Cop.val_casted v tint ->
       sig = enq_sg ->
       bq_abs_initial_state (cq vf sig [v] m, bqst) (bq_abs_init enq bqst [v] m)
-  | abs_initial_state_deq: forall vf b m bqst sig,
+  | abs_initial_state_deq: forall vf b m bqst sig (HFLAG: Mem.alloc_flag m = true),
       vf = Vptr b Integers.Ptrofs.zero ->
       Genv.find_symbol ge deq_id = Some b ->
       Ple (Genv.genv_next ge) (Mem.nextblock m) ->
@@ -1586,18 +1564,18 @@ Section REFINE.
     forall m v rbst bqst
       (HR: rb_bq bqst rbst)
       (HB: Ple (Genv.genv_next se) (Mem.nextblock m))
-      (HV: Cop.val_casted v tint),
+      (HV: Cop.val_casted v tint) (HFLAG: Mem.alloc_flag m = true),
       bq_abs_ms se  (bq_abs_init enq bqst [v] m)
         (st1 (bq_spec @ rb_state) _ (bq_init enq [v] m, rbst))
   | bq_abs_ms_deq:
     forall m rbst bqst
       (HR: rb_bq bqst rbst)
-      (HB: Ple (Genv.genv_next se) (Mem.nextblock m)),
+      (HB: Ple (Genv.genv_next se) (Mem.nextblock m)) (HFLAG: Mem.alloc_flag m = true),
       bq_abs_ms se (bq_abs_init deq bqst nil m)
         (st1 (bq_spec @ rb_state) _ (bq_init deq nil m, rbst))
   | bq_abs_ms_final:
     forall rv m bqst rbst
-      (HR: rb_bq bqst rbst),
+      (HR: rb_bq bqst rbst) (HFLAG: Mem.alloc_flag m = true),
       bq_abs_ms se (bq_abs_final bqst rv m)
         (st1 (bq_spec @ rb_state) _ (bq_final rv m, rbst)).
 
@@ -1799,7 +1777,7 @@ Section REFINE.
           lts_step.
           { eapply step1. instantiate (1 := (_, _)). repeat constructor. }
           apply star_refl. reflexivity.
-        * constructor. now apply refine_correct2.
+        * constructor; eauto. now apply refine_correct2.
       (* deq *)
       + exploit (inc1_block se1).
         eapply Genv.valid_for_linkorder; eauto.
@@ -1852,7 +1830,7 @@ Section REFINE.
           { eapply step1. instantiate (1 := (_, _)). repeat constructor. }
           apply star_refl. reflexivity.
         * eapply refine_correct1 in HR as [X Y]. subst.
-          constructor. auto.
+          constructor; eauto. 
     - apply well_founded_ltof.
   Qed.
 
@@ -1903,10 +1881,10 @@ Section REFINE.
 
   Lemma rb_bq_correct:
     E.forward_simulation
-      (&1) (&flag_cc) abs_bq_espec
+      (&1) (&1) abs_bq_espec
       (comp_esem' (eclightp bq_program) (eclightp rb_program) rb_bq_skel).
   Proof.
-    rewrite (ccref_left_unit1 (&flag_cc)).
+    rewrite (ccref_left_unit1 (&1)) at 2.
     rewrite <- ccref_left_unit2 at 1.
     eapply encap_fsim_vcomp.
     - apply bq_refine.
@@ -1925,7 +1903,7 @@ Section REFINE.
   Lemma rb_bq_correct_clight:
     E.forward_simulation
       (ST.cc_compose (&1) unp_out)
-      (ST.cc_compose (&flag_cc) (unp_in ce vars))
+      (ST.cc_compose (&1) (unp_in ce vars))
       abs_bq_espec
       (comp_esem' (semantics_embed (semantics2 tbq))
          (semantics_embed (semantics2 trb)) rb_bq_skel).
@@ -1938,3 +1916,539 @@ Section REFINE.
   Qed.
 
 End REFINE.
+
+Module BQ.
+  Import Clight.
+
+  (**
+<<
+    void enq(int v) {
+      int i = inc2();
+      set(i, v);
+    }
+>>
+   *)
+  Definition bq_enq_body : Clight.statement :=
+    Ssequence
+      (Scall (Some bq_enq_tmp) (Evar inc2_id (Tfunction Tnil tint cc_default)) nil)
+      (Ssequence
+         (Scall None (Evar set_id (Tfunction (Tcons tint (Tcons tint Tnil)) tvoid cc_default))
+            ([Etempvar bq_enq_tmp tint; Etempvar enq_arg_id tint]))
+         (Sreturn None)).
+  Definition bq_enq : function :=
+    {|
+      fn_return := tvoid;
+      fn_callconv := cc_default;
+      fn_params := [(enq_arg_id, tint)];
+      fn_vars := [];
+      fn_temps := [(bq_enq_tmp, tint)];
+      fn_body := bq_enq_body;
+    |}.
+
+  (**
+<<
+    int deq() {
+      int i = inc1();
+      return get(i);
+    }
+>>
+   *)
+  Definition bq_deq_body : statement :=
+    Ssequence
+      (Scall (Some bq_deq_tmp1) (Evar inc1_id (Tfunction Tnil tint cc_default)) nil)
+      (Ssequence
+         (Scall (Some bq_deq_tmp2) (Evar get_id (Tfunction (Tcons tint Tnil) tint cc_default))
+                ([Etempvar bq_deq_tmp1 tint]))
+         (Sreturn (Some (Etempvar bq_deq_tmp2 tint)))).
+  Definition bq_deq : function :=
+    {|
+      fn_return := tint;
+      fn_callconv := cc_default;
+      fn_params := [];
+      fn_vars := [];
+      fn_temps := [(bq_deq_tmp1, tint); (bq_deq_tmp2, tint)];
+      fn_body := bq_deq_body;
+    |}.
+
+  Definition inc1_ext: fundef :=
+    External (EF_external "inc1" inc1_sg) Tnil tint cc_default.
+  Definition inc2_ext: fundef :=
+    External (EF_external "inc2" inc2_sg) Tnil tint cc_default.
+  Definition get_ext: fundef :=
+    External (EF_external "get" get_sg) (Tcons tint Tnil) tint cc_default.
+  Definition set_ext: fundef :=
+    External (EF_external "set" set_sg) (Tcons tint (Tcons tint Tnil)) tvoid cc_default.
+
+  Program Definition bq_program : program :=
+    {|
+      Ctypes.prog_defs :=
+        PTree.elements (
+            PTree.set set_id (Gfun set_ext)
+              (PTree.set get_id (Gfun get_ext)
+                 (PTree.set inc2_id (Gfun inc2_ext)
+                    (PTree.set inc1_id (Gfun inc1_ext)
+                       (PTree.set deq_id (Gfun (Internal bq_deq))
+                          (PTree.set enq_id (Gfun (Internal bq_enq)) (PTree.empty (globdef fundef type))))))));
+        (* [(enq_id, Gfun (Internal bq_enq)); *)
+        (*  (deq_id, Gfun (Internal bq_deq)); *)
+        (*  (inc1_id, Gfun inc1_ext); *)
+        (*  (inc2_id, Gfun inc2_ext); *)
+        (*  (get_id, Gfun get_ext); *)
+        (*  (set_id, Gfun set_ext)]; *)
+      (* for linking purpose, external functions have to be public *)
+      Ctypes.prog_public := [enq_id; deq_id; inc1_id; inc2_id; get_id; set_id];
+      Ctypes.prog_main := Some 999%positive;
+      Ctypes.prog_types := [];
+      Ctypes.prog_comp_env := (PTree.empty _);
+    |}.
+
+Inductive bq_ms se: bq_internal_state -> state -> Prop :=
+| bq_ms_enq:
+  forall vf m v,
+    Mem.alloc_flag m = true ->
+    Cop.val_casted v tint ->
+    Genv.find_funct (Genv.globalenv se bq_program) vf = Some (Internal bq_enq) ->
+    bq_ms se (bq_init enq [v] m) (Callstate vf [v] Kstop m)
+| bq_ms_deq:
+  forall vf m,
+    Mem.alloc_flag m = true ->
+    Genv.find_funct (Genv.globalenv se bq_program) vf = Some (Internal bq_deq) ->
+    bq_ms se (bq_init deq [] m) (Callstate vf [] Kstop m)
+| bq_ms_call_inc1:
+  forall vf k m b,
+    Mem.alloc_flag m = true ->
+    vf = Vptr b Integers.Ptrofs.zero ->
+    Genv.find_symbol se inc1_id = Some b ->
+    k = (Kcall (Some bq_deq_tmp1) bq_deq empty_env
+          (PTree.Node (PTree.Node PTree.Empty (Some Vundef) PTree.Empty) (Some Vundef) PTree.Empty)
+          (Kseq
+             (Ssequence
+                (Scall (Some bq_deq_tmp2) (Evar get_id (Tfunction (Tcons tint Tnil) tint cc_default))
+                   [Etempvar bq_deq_tmp1 tint]) (Sreturn (Some (Etempvar bq_deq_tmp2 tint)))) Kstop)) ->
+    bq_ms se (bq_call inc1 [] m) (Callstate vf [] k m)
+| bq_ms_call_inc2:
+  forall vf k m v b,
+    Mem.alloc_flag m = true ->
+    Cop.val_casted v tint ->
+    vf = Vptr b Integers.Ptrofs.zero ->
+    Genv.find_symbol se inc2_id = Some b ->
+    k = (Kcall (Some bq_enq_tmp) bq_enq empty_env
+          (PTree.Node (PTree.Node PTree.Empty (Some Vundef) PTree.Empty) (Some v) PTree.Empty)
+          (Kseq
+             (Ssequence
+                (Scall None (Evar set_id (Tfunction (Tcons tint (Tcons tint Tnil)) tvoid cc_default))
+                   [Etempvar bq_enq_tmp tint; Etempvar enq_arg_id tint]) (Sreturn None)) Kstop)) ->
+    bq_ms se (bq_call inc2 [v] m) (Callstate vf [] k m)
+
+| bq_ms_mid_enq:
+  forall m v1 v2 k,
+    Mem.alloc_flag m = true ->
+    Cop.val_casted v1 tint ->
+    Cop.val_casted v2 tint ->
+    k = (Kcall (Some bq_enq_tmp) bq_enq empty_env
+          (PTree.Node (PTree.Node PTree.Empty (Some Vundef) PTree.Empty) (Some v2) PTree.Empty)
+          (Kseq
+             (Ssequence
+                (Scall None (Evar set_id (Tfunction (Tcons tint (Tcons tint Tnil)) tvoid cc_default))
+                   [Etempvar bq_enq_tmp tint; Etempvar enq_arg_id tint]) (Sreturn None)) Kstop)) ->
+    bq_ms se (bq_middle enq [v1; v2] m) (Returnstate v1 k m)
+| bq_ms_mid_deq:
+  forall m v k,
+    Mem.alloc_flag m = true ->
+    Cop.val_casted v tint ->
+    k = (Kcall (Some bq_deq_tmp1) bq_deq empty_env
+          (PTree.Node (PTree.Node PTree.Empty (Some Vundef) PTree.Empty) (Some Vundef) PTree.Empty)
+          (Kseq
+             (Ssequence
+                (Scall (Some bq_deq_tmp2) (Evar get_id (Tfunction (Tcons tint Tnil) tint cc_default))
+                   [Etempvar bq_deq_tmp1 tint]) (Sreturn (Some (Etempvar bq_deq_tmp2 tint)))) Kstop)) ->
+    bq_ms se (bq_middle deq [v] m) (Returnstate v k m)
+
+| bq_ms_call_get:
+  forall vf k m v b,
+    Mem.alloc_flag m = true ->
+    vf = Vptr b Integers.Ptrofs.zero ->
+    Genv.find_symbol se get_id = Some b ->
+    Cop.val_casted v tint ->
+    k = (Kcall (Some bq_deq_tmp2) bq_deq empty_env
+          (PTree.Node (PTree.Node PTree.Empty (Some Vundef) PTree.Empty) (Some v) PTree.Empty)
+          (Kseq (Sreturn (Some (Etempvar bq_deq_tmp2 tint))) Kstop)) ->
+    bq_ms se (bq_call geti [v] m) (Callstate vf [v] k m)
+| bq_ms_call_set:
+  forall vf k m v1 v2 b,
+    Mem.alloc_flag m = true ->
+    vf = Vptr b Integers.Ptrofs.zero ->
+    Genv.find_symbol se set_id = Some b ->
+    Cop.val_casted v1 tint ->
+    Cop.val_casted v2 tint ->
+    k = (Kcall None bq_enq empty_env (PTree.Node (PTree.Node PTree.Empty (Some v1) PTree.Empty) (Some v2) PTree.Empty) (Kseq (Sreturn None) Kstop)) ->
+    bq_ms se (bq_call seti [v1; v2] m) (Callstate vf [v1; v2] k m)
+
+| bq_ms_midx_enq:
+  forall m v k le,
+    Mem.alloc_flag m = true ->
+    k = (Kcall None bq_enq empty_env le (Kseq (Sreturn None) Kstop)) ->
+    bq_ms se (bq_middlex enq v m) (Returnstate v k m)
+| bq_ms_midx_deq:
+  forall m v rv k,
+    Mem.alloc_flag m = true ->
+    Cop.val_casted rv tint ->
+    Cop.val_casted v tint ->
+    k = (Kcall (Some bq_deq_tmp2) bq_deq empty_env
+          (PTree.Node (PTree.Node PTree.Empty (Some Vundef) PTree.Empty) (Some v) PTree.Empty)
+          (Kseq (Sreturn (Some (Etempvar bq_deq_tmp2 tint))) Kstop)) ->
+    bq_ms se (bq_middlex deq rv m) (Returnstate rv k m)
+
+| bq_ms_final:
+  forall rv m,
+    Mem.alloc_flag m = true ->
+    bq_ms se (bq_final rv m) (Returnstate rv Kstop m).
+
+Lemma genv_funct_symbol se id b f (p: program):
+  Genv.find_symbol se id = Some b ->
+  (prog_defmap p) ! id = Some (Gfun f) ->
+  Genv.find_funct (Clight.globalenv se p) (Vptr b Ptrofs.zero) = Some f.
+Proof.
+  intros H1 H2.
+  unfold Genv.find_funct, Genv.find_funct_ptr.
+  destruct Ptrofs.eq_dec; try congruence.
+  apply Genv.find_invert_symbol in H1. cbn.
+  rewrite Genv.find_def_spec. rewrite H1.
+  rewrite H2. reflexivity.
+Qed.
+
+Lemma inc2_block se:
+  Genv.valid_for (AST.erase_program bq_program) se ->
+  exists b, Genv.find_symbol (globalenv se bq_program) inc2_id = Some b /\
+         Genv.find_funct (globalenv se bq_program) (Vptr b zero) = Some inc2_ext.
+Proof.
+  intros Hse.
+  edestruct (@Genv.find_def_symbol _ _ se bq_program inc2_id) as [(b & Hb1 & Hb2) ?]; eauto.
+  reflexivity. exists b. split; eauto. eapply genv_funct_symbol; eauto.
+Qed.
+
+Lemma set_block se:
+  Genv.valid_for (AST.erase_program bq_program) se ->
+  exists b, Genv.find_symbol (globalenv se bq_program) set_id = Some b /\
+         Genv.find_funct (globalenv se bq_program) (Vptr b zero) = Some set_ext.
+Proof.
+  intros Hse.
+  edestruct (@Genv.find_def_symbol _ _ se bq_program set_id) as [(b & Hb1 & Hb2) ?]; eauto.
+  reflexivity. exists b. split; eauto. eapply genv_funct_symbol; eauto.
+Qed.
+
+Lemma inc1_block se:
+  Genv.valid_for (AST.erase_program bq_program) se ->
+  exists b, Genv.find_symbol (globalenv se bq_program) inc1_id = Some b /\
+         Genv.find_funct (globalenv se bq_program) (Vptr b zero) = Some inc1_ext.
+Proof.
+  intros Hse.
+  edestruct (@Genv.find_def_symbol _ _ se bq_program inc1_id) as [(b & Hb1 & Hb2) ?]; eauto.
+  reflexivity. exists b. split; eauto. eapply genv_funct_symbol; eauto.
+Qed.
+
+Lemma get_block se:
+  Genv.valid_for (AST.erase_program bq_program) se ->
+  exists b, Genv.find_symbol (globalenv se bq_program) get_id = Some b /\
+         Genv.find_funct (globalenv se bq_program) (Vptr b zero) = Some get_ext.
+Proof.
+  intros Hse.
+  edestruct (@Genv.find_def_symbol _ _ se bq_program get_id) as [(b & Hb1 & Hb2) ?]; eauto.
+  reflexivity. exists b. split; eauto. eapply genv_funct_symbol; eauto.
+Qed.
+
+Ltac crush_eval_expr :=
+  cbn;
+  lazymatch goal with
+  | [ |- eval_expr _ _ _ _ (Etempvar _ _) _ ] => apply eval_Etempvar; reflexivity
+  | [ |- eval_expr _ _ _ _ (Econst_int _ _) _ ] => apply eval_Econst_int
+  | [ |- eval_expr _ _ _ _ (Ebinop _ _ _ _) _ ] => eapply eval_Ebinop
+  | [ |- eval_expr _ _ _ _ (Evar _ _) _ ] => eapply eval_Elvalue
+  | [ |- eval_expr _ _ _ _ (Ederef _ _) _ ] => eapply eval_Elvalue
+  end.
+Ltac crush_eval_lvalue :=
+  cbn;
+  lazymatch goal with
+  | [ |- eval_lvalue _ _ _ _ (Evar _ _) _ _ _ ] =>
+      solve [ apply eval_Evar_local; reflexivity
+            | apply eval_Evar_global; [ reflexivity | eassumption ] ]
+  | _ => constructor
+  end.
+
+Ltac crush_expr :=
+  repeat (cbn;
+    match goal with
+    | [ |- eval_expr _ _ _ _ _ _  ] => crush_eval_expr
+    | [ |- eval_lvalue _ _ _ _ _ _ _ _  ] => crush_eval_lvalue
+    | [ |- eval_exprlist _ _ _ _ _ _ _  ] => econstructor
+    | [ |- deref_loc _ _ _ _ _ _ ] => crush_deref
+    | [ |- Cop.sem_binary_operation _ _ _ _ _ _ _ = Some _] => try reflexivity
+    | [ |- Cop.sem_cast _ ?ty ?ty _ = Some _ ] =>
+        apply Cop.cast_val_casted; eauto
+    | [ |- assign_loc _ (Tint _ _ _) _ _ _ _ _ _ ] =>
+        eapply assign_loc_value; [ reflexivity | ]
+    | _ => try solve [ easy | eassumption ]
+    end).
+
+Ltac crush_step := cbn;
+  match goal with
+  | [ |- Step _ (Callstate _ _ _ _) _ _ ] =>
+      eapply step_internal_function;
+      [ eauto | constructor; cbn;
+        [ solve_list_norepet
+        | solve_list_norepet
+        | solve_list_disjoint
+        | repeat (econstructor; simpl; auto)
+        | reflexivity | eauto ] ]
+  | [ |- Step _ (State _ (Ssequence _ _) _ _ _ _) _ _ ] => apply step_seq
+  | [ |- Step _ (State _ (Sset _ _) _ _ _ _) _ _ ] => apply step_set
+  | [ |- Step _ (State _ (Scall _ _ _) _ _ _ _) _ _ ] => eapply step_call
+  | [ |- Step _ (Returnstate _ _ _) _ _ ] => eapply step_returnstate
+  | [ |- Step _ (State _ Sskip (Kseq _ _) _ _ _) _ _ ] => apply step_skip_seq
+  | [ |- Step _ (State _ (Sassign _ _) _ _ _ _) _ _ ] => eapply step_assign
+  | [ |- Step _ (State _ (Sreturn None) _ _ _ _) _ _ ] => eapply step_return_0
+  | [ |- Step _ (State _ (Sreturn (Some _)) _ _ _ _) _ _ ] => eapply step_return_1
+  | [ |- Step _ (State _ ?s _ _ _ _) _ _ ] => is_const s; unfold s; crush_step
+  end.
+
+Ltac lts_step := eapply star_left with (t1 := E0) (t2 := E0); [ | | reflexivity ].
+
+  Lemma bq_correct0: forward_simulation 1 1 bq_spec (semantics2 bq_program).
+  Proof.
+    constructor. econstructor.
+    { cbn. unfold clightp_erase_program, erase_program. f_equal. }
+    {
+      intros. cbn. unfold footprint_of_program.
+      setoid_rewrite PTree_Properties.of_list_elements. cbn.
+      destruct (peq i set_id). subst. rewrite !PTree.gss. reflexivity.
+      rewrite PTree.gso; eauto. symmetry. rewrite PTree.gso; eauto.
+      destruct (peq i get_id). subst. rewrite !PTree.gss. reflexivity.
+      rewrite PTree.gso; eauto. symmetry. rewrite PTree.gso; eauto.
+      destruct (peq i inc2_id). subst. rewrite !PTree.gss. reflexivity.
+      rewrite PTree.gso; eauto. symmetry. rewrite PTree.gso; eauto.
+      destruct (peq i inc1_id). subst. rewrite !PTree.gss. reflexivity.
+      rewrite PTree.gso; eauto. symmetry. rewrite PTree.gso; eauto.
+      destruct (peq i deq_id). subst. rewrite !PTree.gss. reflexivity.
+      rewrite PTree.gso; eauto. symmetry. rewrite PTree.gso; eauto.
+      destruct (peq i enq_id). subst. rewrite !PTree.gss. reflexivity.
+      rewrite PTree.gso; eauto. symmetry. rewrite PTree.gso; eauto.
+      rewrite !PTree.gempty. reflexivity.
+    }
+    Local Opaque semantics2.
+    intros. instantiate (1 := fun _ _ _ => _). cbn beta.
+    destruct H.
+    eapply forward_simulation_plus with (match_states := bq_ms se1).
+    - intros. cbn in *. eprod_crush. inv H1.
+      + eexists. split.
+        * econstructor; eauto.
+          eapply genv_funct_symbol; eauto. reflexivity.
+          unfold type_of_function. f_equal; cbn.
+          constructor; eauto. constructor.
+        * constructor; eauto. eapply genv_funct_symbol; eauto.
+      + eexists. split.
+        * econstructor; eauto.
+          eapply genv_funct_symbol; eauto. reflexivity.
+          unfold type_of_function. f_equal; cbn.
+          constructor; eauto.
+        * constructor; eauto. eapply genv_funct_symbol; eauto.
+    - intros. inv H1. inv H.
+      eexists. split. constructor. constructor; eauto.
+    - intros. inv H1; inv H.
+      (* inc1 *)
+      + eexists tt, _.  split. 2: split.
+        * econstructor; eauto.
+          eapply genv_funct_symbol; eauto. reflexivity.
+        * assert (b = b0). cbn in *. congruence.
+          subst. constructor; eauto.
+        * split. constructor. intros. inv H. inv H1.
+          eexists. split; constructor; eauto.
+      (* inc2 *)
+      + eexists tt, _.  split. 2: split.
+        * econstructor; eauto.
+          eapply genv_funct_symbol; eauto. reflexivity.
+        * assert (b = b0).  cbn in *. congruence.
+          subst. constructor; eauto.
+        * split. constructor. intros. inv H. inv H1.
+          eexists. split; constructor; eauto.
+      (* get *)
+      + eexists tt, _.  split. 2: split.
+        * econstructor; eauto.
+          eapply genv_funct_symbol; eauto. reflexivity.
+        * assert (b = b0). cbn in *. congruence.
+          subst. constructor; eauto.
+        * split. constructor. intros. inv H. inv H1.
+          eexists. split. econstructor; eauto.
+          econstructor. 4: reflexivity. all: eauto.
+      (* set *)
+      + eexists tt, _.  split. 2: split.
+        * econstructor; eauto.
+          eapply genv_funct_symbol; eauto. reflexivity.
+        * assert (b = b0). cbn in *. congruence.
+          subst. constructor; eauto.
+        * split. constructor. intros. inv H. inv H1.
+          eexists. split. econstructor; eauto.
+          econstructor; eauto.
+    - intros. inv H1; inv H.
+      (* enq: from initial to call inc2 *)
+      + exploit inc2_block; eauto. intros (b1 & A & B).
+        eexists. split.
+        * eapply plus_left. constructor; eauto.
+          {
+            constructor; repeat constructor.
+            intros x. inv x. solve_list_disjoint. eauto.
+          }
+          lts_step. crush_step.
+          lts_step. crush_step; crush_expr.
+          apply star_refl. reflexivity.
+        * econstructor; eauto.
+      (* deq: from initial to call inc1 *)
+      + exploit inc1_block; eauto. intros (b1 & A & B).
+        eexists. split.
+        * eapply plus_left. constructor; eauto.
+          { constructor; repeat constructor. solve_list_disjoint. eauto. }
+          lts_step. crush_step.
+          lts_step. crush_step; crush_expr.
+          apply star_refl. reflexivity.
+        * econstructor; eauto.
+      (* enq: after inc2, call set *)
+      + exploit set_block; eauto. intros (b1 & A & B).
+        eexists. split.
+        * eapply plus_left. constructor; eauto.
+          lts_step. crush_step.
+          lts_step. crush_step.
+          lts_step. crush_step; crush_expr.
+          apply star_refl. reflexivity.
+        * econstructor; eauto.
+      (* deq: after inc1, call get *)
+      + exploit get_block; eauto. intros (b1 & A & B).
+        eexists. split.
+        * eapply plus_left. constructor; eauto.
+          lts_step. crush_step.
+          lts_step. crush_step.
+          lts_step. crush_step; crush_expr.
+          apply star_refl. reflexivity.
+        * econstructor; eauto.
+      (* enq: to final state *)
+      + eexists. split.
+        * eapply plus_left. constructor.
+          lts_step. crush_step.
+          lts_step. crush_step; crush_expr.
+          apply star_refl. reflexivity.
+        * constructor. eauto.
+      (* deq: to final state *)
+      + eexists. split.
+        * eapply plus_left. constructor.
+          lts_step. crush_step.
+          lts_step. crush_step; crush_expr.
+          apply star_refl. reflexivity.
+        * constructor. eauto.
+    - apply well_founded_ltof.
+  Qed.
+
+End BQ.
+
+Inductive join_query : query (Lifting.lifted_li Mem.mem li_c) -> query li_c -> Prop :=
+| join_query_intro vf sg vargs m msrc mtgt
+    (MJOIN: Join.join m msrc mtgt):
+  join_query (cq vf sg vargs msrc, m) (cq vf sg vargs mtgt).
+
+Inductive join_reply: reply (Lifting.lifted_li Mem.mem li_c) -> reply li_c -> Prop :=
+| join_reply_intro rv m msrc mtgt
+    (MJOIN: Join.join m msrc mtgt):
+  join_reply (cr rv msrc, m) (cr rv mtgt).
+
+Program Definition join_cc : callconv (Lifting.lifted_li Mem.mem li_c) li_c :=
+  {|
+    ccworld := unit;
+    match_senv _ se1 se2 := se1 = se2;
+    match_query _ := join_query;
+    match_reply _ := join_reply;
+  |}.
+Next Obligation. reflexivity. Qed.
+Next Obligation. inv H0. reflexivity. Qed.
+Next Obligation. inv H. reflexivity. Qed.
+
+Section FRAME.
+  Import Clight.
+  Import Join.
+  Context (p: program).
+  Inductive join_ms : state * mem -> state -> Prop :=
+  | clightp_ms_State:
+    forall f s k e le mx m1 m2 (HJ: join mx m1 m2),
+      join_ms (State f s k e le m1, mx) (State f s k e le m2)
+  | join_ms_Callstate:
+    forall vf args k mx m1 m2 (HJ: join mx m1 m2),
+      join_ms (Callstate vf args k m1, mx) (Callstate vf args k m2)
+  | join_ms_Returnstate:
+    forall rv k mx m1 m2 (HJ: join mx m1 m2),
+      join_ms (Returnstate rv k m1, mx) (Returnstate rv k m2).
+
+  Lemma join_step ge mx:
+    forall s1 t s1',
+    Clight.step2 ge s1 t s1' ->
+    forall s2, join_ms (s1, mx) s2 ->
+    exists s2', Clight.step2 ge s2 t s2' /\
+    join_ms (s1', mx) s2'.
+  Proof with (eexists _; split; econstructor; eauto).
+    induction 1; intros S1 HS; inv HS;
+      try solve [ eexists _; split; econstructor; eauto ].
+    - exploit clight_lvalue_join; eauto. intros A.
+      exploit clight_expr_join; eauto. intros B.
+      exploit sem_cast_join; eauto.
+      rewrite H1. intros C. inv C.
+      exploit assign_loc_join; eauto. intros (? & D & E)...
+    - exploit clight_expr_join; eauto. intros A...
+    - exploit clight_expr_join; eauto. intros A.
+      exploit clight_exprlist_join; eauto; intros B...
+    - exploit clight_exprlist_join; eauto. intros A.
+      exploit ClightP.external_call_join; eauto. intros (? & B & C)...
+    - exploit clight_expr_join; eauto. intros A.
+      exploit bool_val_join; eauto.
+      rewrite H0. intros B. inv B...
+    - exploit free_list_join; eauto.
+      rewrite H. intros A. inv A...
+    - exploit clight_expr_join; eauto. intros A.
+      exploit sem_cast_join; eauto.
+      rewrite H0. intros B. inv B.
+      exploit free_list_join; eauto.
+      rewrite H1. intros C. inv C...
+    - exploit free_list_join; eauto.
+      rewrite H0. intros A. inv A...
+    - exploit clight_expr_join; eauto. intros A...
+    - exploit clight_function_entry_join; eauto. intros (? & A & B)...
+    - exploit ClightP.external_call_join; eauto. intros (? & A & B)...
+  Qed.
+
+  Lemma fp :
+    forward_simulation join_cc join_cc ((semantics2 p) @ mem) (semantics2 p).
+  Proof.
+    constructor. econstructor. reflexivity. firstorder.
+    instantiate (1 := fun _ _ _ => _). cbn beta.
+    intros se1 se2 w Hse Hse1. cbn -[semantics2] in *. subst se2.
+    rename w into mx.
+    eapply forward_simulation_step with (match_states := join_ms).
+    - intros [q1 mq] q2 [s1 ms] Hq Hi. cbn in *. eprod_crush.
+      inv Hq. inv H.
+      eexists. split; econstructor; eauto.
+      apply mjoin_nextblock in MJOIN.
+      rewrite MJOIN. unfold Ple in *.
+      etransitivity; eauto.
+      apply Pos.le_max_r.
+    - intros [s1 ms1] s2 [r1 mr1] Hjoin Hf.
+      inv Hf. cbn in *. subst. inv H. inv Hjoin.
+      eexists. split; constructor; eauto.
+    - intros [s1 ms1] s2 [q1 mq1] Hjoin He.
+      inv He. cbn in *. subst. inv H. inv Hjoin.
+      eexists tt, _. repeat apply conj; eauto.
+      + econstructor; eauto.
+      + constructor; eauto.
+      + intros [r1 mr1] r2 [s1' ms1'] Hjoin Hr.
+        eprod_crush. inv H. inv Hjoin.
+        eexists. split; constructor; eauto.
+    - intros [s1 ms1] t [s1' ms1'] [HS <-] s2 Hjoin.
+      eapply join_step; eauto.
+    - apply well_founded_ltof.
+  Qed.
+
+End FRAME.
+
