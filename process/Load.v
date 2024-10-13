@@ -1135,6 +1135,42 @@ Section SYS_C_ASM.
       split. reflexivity. eauto.
   Qed.
 
+  Lemma cklr_match_query_inv' (w: ccworld cc_cklrs) b ofs len m q vf i sg:
+    match_query cc_cklrs w
+                (cq vf sg [Vint i; Vptr b ofs; Vint len] m)
+                q ->
+    exists m' b' ofs' vf',
+      q = (cq vf' sg [Vint i; Vptr b' ofs'; Vint len] m')
+      /\ mm_cklr w m m' /\ mp_cklr w b ofs b' ofs' /\ mv_cklr w vf vf'.
+  Proof.
+    destruct w. 2: solve_cklr_match_query_inv.
+    destruct c. 2: solve_cklr_match_query_inv.
+    destruct c. 2: solve_cklr_match_query_inv.
+    destruct c; solve_cklr_match_query_inv.
+  Qed.
+
+  Lemma cklrs_match_query_inv' (nw: ccworld (cc_cklrs ^ {*})) b ofs len m q vf i sg:
+    match_query (cc_cklrs ^ {*}) nw
+                (cq vf sg [Vint i; Vptr b ofs; Vint len] m)
+                q ->
+    exists m' b' ofs' vf',
+      q = (cq vf' sg [Vint i; Vptr b' ofs'; Vint len] m')
+      /\ mm_cklrs nw m m' /\ mp_cklrs nw b ofs b' ofs' /\ mv_cklrs nw vf vf'.
+  Proof.
+    destruct nw. cbn. revert vf b ofs m. induction x; cbn.
+    - intros. subst. destruct c.
+      eexists _, _, _, _. repeat split; try econstructor; eauto.
+    - cbn in *. destruct c as [[se w] wn].
+      intros * (qm & Hq1 & Hq2).
+      apply cklr_match_query_inv' in Hq1 as
+          (mm & bm & ofsm & vfm & Hqm & Hmm & Hmp & Hmv).
+      subst qm.
+      specialize (IHx _ _ _ _ _ Hq2) as
+        (m' & b' & ofs' & vf' & Hq' & Hm' & Hp' & Hv').
+      exists m', b', ofs', vf'. repeat split; try econstructor; eauto.
+      split. reflexivity. eauto.
+  Qed.
+
   Lemma cklr_match_reply_intro w0 w m1 m2 v:
     w0 ~> w -> mm_cklr w m1 m2 ->
     match_reply cc_cklrs w0 {| cr_retval := Vint v; cr_mem := m1 |}
