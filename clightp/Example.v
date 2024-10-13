@@ -581,7 +581,8 @@ Inductive rb_penv_rel: rb_state -> penv -> Prop :=
              exists v, ZMap.get (Z.of_nat i) vf = Val v tint
                   /\ v = f i /\ Cop.val_casted v tint))
   (RC1: nat_rel c1 vc1) (NC1: (c1 < N)%nat)
-  (RC2: nat_rel c2 vc2) (NC2: (c2 < N)%nat):
+  (RC2: nat_rel c2 vc2) (NC2: (c2 < N)%nat)
+  (HNONE: forall id, id <> arr_id -> id <> cnt1_id -> id <> cnt2_id -> pe ! id = None):
   rb_penv_rel (f, c1, c2) pe.
 
 Inductive rb_query: c_query * rb_state -> c_query * penv -> Prop :=
@@ -635,6 +636,7 @@ Section RB.
       + unfold N. lia.
       + constructor. reflexivity.
       + unfold N. lia.
+      + intros. do 3 rewrite PTree.gso by eauto. reflexivity.
     - intros. cbn in *. eprod_crush. econstructor; intros; cbn in *; eprod_crush.
       + subst. eexists tt, _. split. constructor.
         inv H3. eexists tt, (tt, (_, _)). repeat split; eauto.
@@ -782,6 +784,8 @@ Proof.
         econstructor; eauto; try ptree_tac.
         -- constructor. apply cnt_inc_simp; eauto.
         -- apply Nat.mod_upper_bound. lia.
+        -- intros. rewrite PTree.gso; eauto.
+           rewrite PTree.gso; eauto.
     (* inc2 *)
     + inv HPE. inv RC2. inv HFUN. eexists (_, _). split.
       * eapply plus_left. crush_step.
@@ -803,6 +807,8 @@ Proof.
         econstructor; eauto; try ptree_tac.
         -- constructor. apply cnt_inc_simp; eauto.
         -- apply Nat.mod_upper_bound. lia.
+        -- intros. rewrite PTree.gso; eauto.
+           rewrite PTree.gso; eauto.
     (* get *)
     + inv HPE. inv HFUN.
       edestruct RA as (v & HV1 & HV2 & HV3). apply H1.
@@ -860,6 +866,7 @@ Proof.
            eexists. split; eauto.
            rewrite ZMap.gso; eauto.
            intros Hc. apply n. lia.
+        -- intros. rewrite PTree.gso; eauto.
   - apply well_founded_ltof.
 Qed.
 

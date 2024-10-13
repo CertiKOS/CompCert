@@ -828,3 +828,59 @@ Proof.
     eapply genv_match_acc; eauto.
   - apply well_founded_ltof.
 Qed.
+
+Lemma semantics2_rel p R:
+  forward_simulation (cc_c R) (cc_c R) (Clight.semantics2 p) (Clight.semantics2 p).
+Proof.
+  constructor. econstructor; eauto.
+  { intros i; firstorder. }
+  instantiate (1 := fun _ _ _ => _). cbn beta.
+  intros se1 se2 w Hse Hse1. cbn -[semantics1] in *.
+  pose (ms := fun s1 s2 =>
+    klr_diam tt (genv_match p R * state_match R) w
+      (globalenv se1 p, s1)
+      (globalenv se2 p, s2)).
+  apply forward_simulation_step with (match_states := ms); cbn.
+  - intros q1 q2 s1 Hq Hs1. inv Hs1. inv Hq.
+    assert (Hge: genv_match p R w (globalenv se1 p) (globalenv se2 p)).
+    {
+      cut (match_stbls R w (globalenv se1 p) (globalenv se2 p)); eauto.
+      eapply (rel_push_rintro (fun se=>globalenv se p) (fun se=>globalenv se p)).
+    }
+    transport_hyps.
+    exists (Callstate vf2 vargs2 Kstop m2). split.
+    + econstructor; eauto.
+      * revert vargs2 H9. clear - H1.
+        induction H1; inversion 1; subst; constructor; eauto.
+        eapply val_casted_inject; eauto.
+      * eapply match_stbls_nextblock; eauto.
+    + exists w; split; try rauto.
+      repeat rstep. clear -H9. induction H9; constructor; eauto.
+  - intros s1 s2 r1 (w' & Hw' & Hge & Hs) H. destruct H as [v1' m1']. cbn in *.
+    inv Hs. inv H4.
+    eexists. split.
+    + constructor.
+    + exists w'. split; auto.
+      constructor; eauto.
+  - intros s1 s2 qx1 (w' & Hw' & Hge & Hs) Hq1.
+    destruct Hq1. cbn [fst snd] in *. inv Hs.
+    assert (vf <> Vundef) by (destruct vf; cbn in *; congruence).
+    transport_hyps.
+    eexists w', _. repeat apply conj.
+    + econstructor.
+      eassumption.
+    + econstructor; simpl; eauto.
+      clear -H6. induction H6; constructor; eauto.
+    + rauto.
+    + intros r1 r2 s1' (w'' & Hw'' & Hr) Hs1'. destruct Hr. inv Hs1'.
+      eexists. split.
+      * constructor.
+      * exists w''. split; [rauto | ].
+        repeat rstep. eapply genv_match_acc; eauto.
+  - intros s1 t s1' Hstep s2 (w' & Hw' & Hge & Hs). cbn [fst snd] in *.
+    transport Hstep.
+    eexists; split; try rauto.
+    exists w''. split; repeat rstep.
+    eapply genv_match_acc; eauto.
+  - apply well_founded_ltof.
+Qed.
