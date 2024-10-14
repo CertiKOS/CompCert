@@ -437,3 +437,9 @@ Section INIT_MEM.
   Qed.
 
 End INIT_MEM.
+
+Require ValueAnalysis VAInject.
+
+Hypothesis
+  (init_mem_romatch: forall se sk m,
+      init_mem se sk = Some m -> ValueAnalysis.romatch_all se (VAInject.bc_of_symtbl se) m).
