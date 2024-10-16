@@ -126,7 +126,6 @@ CKLR=\
   Valuesrel.v Builtinsrel.v Eventsrel.v \
   Coprel.v Clightrel.v \
   Registersrel.v RTLrel.v \
-  Join.v
 
 # Back-end modules (in backend/, $(ARCH)/)
 
