@@ -28,7 +28,7 @@ else
 ARCHDIRS=$(ARCH)_$(BITSIZE) $(ARCH)
 endif
 
-DIRS := lib common $(ARCHDIRS) backend cfrontend driver export cparser cklr clightp process
+DIRS := lib common $(ARCHDIRS) backend cfrontend driver export cparser cklr
 
 COQINCLUDES := $(foreach d, $(DIRS), -R $(d) compcert.$(d)) -R $(COQREL) coqrel
 
@@ -111,8 +111,6 @@ COMMON=Errors.v AST.v Linking.v \
   SmallstepLinking.v \
   Invariant.v \
   CallconvAlgebra.v \
-  CategoricalComp.v \
-  FlatComp.v \
 
 # Behaviors.v
 # Determinism.v
@@ -204,16 +202,10 @@ else
 EXPORTLIB=
 endif
 
-CLIGHTP=AbRel.v CModule.v ClightP.v ClightPComp.v ClightPLink.v \
-  Composition.v Encapsulation.v Example.v Lifting.v PEnv.v SkelLinking.v \
-  TensorComp.v
-
-PROCESS=InitMem.v Load.v Process.v With.v Pipe.v CAsm.v
-
 # All source files
 
 FILES=$(VLIB) $(COMMON) $(CKLR) $(BACKEND) $(CFRONTEND) $(DRIVER) $(FLOCQ) \
-  $(MENHIRLIB) $(PARSER) $(EXPORTLIB) $(CLIGHTP) $(PROCESS)
+  $(MENHIRLIB) $(PARSER) $(EXPORTLIB)
 
 # Generated source files
 
